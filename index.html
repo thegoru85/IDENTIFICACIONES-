@@ -1,52 +1,137 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ID Camera App - SEARS</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diagnóstico Cámara - SEARS</title>
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    #camera-feed, #cropped-canvas, #result-canvas { max-width: 300px; border-radius: 0.75rem; }
-    #camera-feed, #cropped-canvas { display: none; }
-    #crop-box {
-      position: absolute;
-      border: 3px dashed #00ff00;
-      background: rgba(0,255,0,0.1);
-      box-shadow: 0 0 0 9999px rgba(0,0,0,0.7);
-      cursor: move;
-      display: none;
-    }
-    .id-size-guide {
-      width: 85.6mm; height: 53.98mm;
-      border: 2px dashed #dc2626;
-      background: rgba(220,38,38,0.1);
-      margin: 10px auto;
-    }
-    @media print {
-      body * { visibility: hidden; }
-      #final-document, #final-document * { visibility: visible; }
-      #final-document { position: absolute; left: 0; top: 0; width: 100%; }
-    }
+    body{font-family:system-ui,Arial;padding:18px;background:#f3f4f6}
+    .card{max-width:760px;margin:0 auto;background:#fff;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    video{max-width:100%;display:none;border-radius:6px;border:1px solid #ddd}
+    pre{background:#111;color:#0f0;padding:10px;border-radius:6px;height:140px;overflow:auto}
+    select,input,button{margin:6px 0;padding:8px;border-radius:6px;border:1px solid #ccc;width:100%}
+    .row{display:flex;gap:8px}
+    .col{flex:1}
+    .hint{font-size:13px;color:#444}
   </style>
 </head>
-<body class="bg-red-600 min-h-screen flex flex-col items-center justify-center p-4">
+<body>
+  <div class="card">
+    <h2>Diagnóstico cámara</h2>
+    <p class="hint">Sube esto a GitHub Pages (https) o abre en localhost. No usar file://</p>
 
-  <div class="bg-white p-4 rounded-xl shadow-xl w-full max-w-md text-center relative">
-    <div class="absolute top-3 left-3 bg-red-600 text-white font-bold rounded-full w-12 h-12 flex items-center justify-center">SEARS</div>
-    <h1 class="text-2xl font-bold mt-6">ID Camera App</h1>
-    <p class="text-sm text-gray-500 mb-4">Toma, recorta e imprime identificación</p>
+    <label for="device">Cámara disponible</label>
+    <select id="device"></select>
 
-    <video id="camera-feed" autoplay playsinline muted></video>
-    <canvas id="photo-canvas" class="hidden"></canvas>
-
-    <div id="crop-container" class="relative hidden mt-3">
-      <canvas id="cropped-canvas"></canvas>
-      <div id="crop-box"></div>
+    <div class="row">
+      <button id="open">Abrir cámara</button>
+      <button id="stop">Detener</button>
     </div>
 
-    <div id="status" class="mt-2 text-gray-700 text-sm">Pulsa "Abrir cámara".</div>
+    <div style="margin-top:12px;">
+      <video id="video" autoplay playsinline muted></video>
+    </div>
 
-    <div class="mt-4 space-y-2">
-      <button id="start-camera" class="w-full py-2 bg-indigo-600 text-whi
+    <p class="hint">Estado</p>
+    <div id="status">—</div>
+
+    <p class="hint">Log / errores (abre DevTools -> Console para info detallada)</p>
+    <pre id="log"></pre>
+  </div>
+
+<script>
+const deviceSel = document.getElementById('device');
+const openBtn = document.getElementById('open');
+const stopBtn = document.getElementById('stop');
+const statusDiv = document.getElementById('status');
+const logPre = document.getElementById('log');
+const video = document.getElementById('video');
+
+let currentStream = null;
+
+function log(msg){
+  console.log(msg);
+  logPre.textContent += msg + '\\n';
+  logPre.scrollTop = logPre.scrollHeight;
+}
+function logError(e){
+  console.error(e);
+  const name = e && e.name ? e.name : 'Error';
+  const message = e && e.message ? e.message : String(e);
+  log(`ERROR: ${name} - ${message}`);
+}
+
+async function ensureSecureContext(){
+  if(location.protocol === 'file:'){
+    statusDiv.textContent = 'ERROR: No funciona desde file://. Usa HTTPS o localhost.';
+    throw new Error('Insecure context: file://');
+  }
+  if(location.hostname !== 'localhost' && location.protocol !== 'https:'){
+    statusDiv.textContent = 'ADVERTENCIA: No estás en HTTPS. GitHub Pages usa HTTPS.';
+    // Do not throw here; just warn.
+  }
+}
+
+async function listCameras(){
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices){
+      statusDiv.textContent = 'API navigator.mediaDevices no disponible';
+      return;
+    }
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const cams = devices.filter(d=>d.kind==='videoinput');
+    deviceSel.innerHTML = cams.map((c,i)=>`<option value="${c.deviceId}">${c.label||('Cámara '+(i+1))}</option>`).join('') || '<option value="">(ninguna)</option>';
+    log('Cámaras encontradas: ' + cams.length);
+    if(cams.length===0) statusDiv.textContent = 'No se detectaron cámaras. Revisa permisos y conexión.';
+  }catch(e){ logError(e); }
+}
+
+async function startCamera(){
+  try{
+    await ensureSecureContext();
+    if(currentStream) stopCamera();
+    const deviceId = deviceSel.value || undefined;
+    const constraints = deviceId ? { video: { deviceId: { exact: deviceId } } } : { video: { facingMode: 'environment', width:{ideal:1280}, height:{ideal:720} } };
+    statusDiv.textContent = 'Solicitando permiso de cámara...';
+    log('getUserMedia constraints: ' + JSON.stringify(constraints));
+    currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = currentStream;
+    video.style.display = 'block';
+    await video.play().catch(()=>{/* ignore autoplay promise issues */});
+    statusDiv.textContent = 'Cámara activa';
+    log('Stream iniciado correctamente.');
+  }catch(e){
+    logError(e);
+    statusDiv.textContent = 'Error al abrir cámara: ' + (e.name || e.message || e);
+    // Si NotAllowedError mostrará info útil
+    if(e.name === 'NotAllowedError') log('Permiso denegado por el usuario o por políticas del navegador.');
+    if(e.name === 'NotFoundError') log('No se encontró dispositivo de cámara.');
+  }
+}
+
+function stopCamera(){
+  if(!currentStream) { statusDiv.textContent = 'No hay stream activo'; return; }
+  currentStream.getTracks().forEach(t => t.stop());
+  currentStream = null;
+  video.srcObject = null;
+  video.style.display = 'none';
+  statusDiv.textContent = 'Stream detenido';
+  log('Stream detenido.');
+}
+
+openBtn.addEventListener('click', startCamera);
+stopBtn.addEventListener('click', stopCamera);
+
+navigator.mediaDevices?.addEventListener?.('devicechange', async ()=>{ log('devicechange'); await listCameras(); });
+
+(async function init(){
+  try{
+    log('Inicializando...');
+    await ensureSecureContext();
+    await listCameras();
+    statusDiv.textContent = 'Listo. Selecciona una cámara y pulsa "Abrir cámara".';
+  }catch(e){ logError(e); }
+})();
+</script>
+</body>
+</html>
