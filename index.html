@@ -121,6 +121,23 @@
             background-color: #ef4444;
             color: white;
         }
+        #preview-image {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: none;
+        }
+        #email-container {
+            display: none;
+            width: 100%;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            border: 1px solid #e5e7eb;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -189,6 +206,9 @@
                 </div>
             </div>
 
+            <!-- Vista previa de la foto tomada -->
+            <img id="preview-image" class="rounded-lg shadow-md" alt="Vista previa">
+
             <!-- Canvas para la foto capturada -->
             <canvas id="photo-canvas" class="hidden"></canvas>
 
@@ -226,10 +246,31 @@
                     <button id="rotate-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
                         🔄 Rotar 90°
                     </button>
+                    <button id="send-email-btn" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
+                        📧 Enviar por correo
+                    </button>
                 </div>
                 <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 mt-2 font-medium">
                     🔁 Tomar otra foto
                 </button>
+            </div>
+            
+            <!-- Contenedor para envío por correo -->
+            <div id="email-container">
+                <h3 class="font-bold text-lg mb-3 text-center">Enviar por correo</h3>
+                <div class="space-y-3">
+                    <input type="email" id="email-to" placeholder="Correo destinatario" class="w-full p-3 border border-gray-300 rounded-lg">
+                    <input type="text" id="email-subject" placeholder="Asunto" class="w-full p-3 border border-gray-300 rounded-lg" value="Identificación SEARS">
+                    <textarea id="email-body" placeholder="Mensaje" class="w-full p-3 border border-gray-300 rounded-lg h-24">Adjunto las imágenes de identificación capturadas con la aplicación SEARS.</textarea>
+                    <div class="flex space-x-2">
+                        <button id="send-email" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200">
+                            Enviar
+                        </button>
+                        <button id="cancel-email" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200">
+                            Cancelar
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -301,6 +342,14 @@
         const cameraContainer = document.getElementById('camera-container');
         const liveCropBox = document.getElementById('live-crop-box');
         const sideIndicator = document.getElementById('side-indicator');
+        const previewImage = document.getElementById('preview-image');
+        const sendEmailBtn = document.getElementById('send-email-btn');
+        const emailContainer = document.getElementById('email-container');
+        const emailTo = document.getElementById('email-to');
+        const emailSubject = document.getElementById('email-subject');
+        const emailBody = document.getElementById('email-body');
+        const sendEmail = document.getElementById('send-email');
+        const cancelEmail = document.getElementById('cancel-email');
 
         let stream = null;
         let originalImage = null;
@@ -345,7 +394,7 @@
             const rect = cameraFeed.getBoundingClientRect();
             
             // Tamaño más pequeño para identificación (proporción 2:3)
-            const boxHeight = Math.min(videoHeight * 0.5, 300); // Reducido de 0.6 a 0.5
+            const boxHeight = Math.min(videoHeight * 0.5, 300);
             const boxWidth = boxHeight * 0.66; // Proporción 2:3 para IDs
             
             // Calcular escala para posicionamiento correcto
@@ -442,6 +491,11 @@
             // Dibujar el frame actual del video en el canvas
             const context = photoCanvas.getContext('2d');
             context.drawImage(cameraFeed, 0, 0, videoWidth, videoHeight);
+            
+            // Crear vista previa de la imagen tomada
+            const dataURL = photoCanvas.toDataURL('image/jpeg', 0.9);
+            previewImage.src = dataURL;
+            showElement(previewImage);
             
             // Detener la cámara
             stream.getTracks().forEach(track => track.stop());
@@ -599,6 +653,7 @@
             // Ocultar elementos de recorte y mostrar resultados
             hideElement(cropContainer);
             hideElement(cropPhotoBtn);
+            hideElement(previewImage);
             showElement(resultArea);
             
             if (currentSide === 'front') {
@@ -610,7 +665,7 @@
                 showElement(startCameraBtn);
                 hideElement(resultArea);
             } else {
-                showStatus('✅ ¡Ambas caras capturadas! Genera el documento');
+                showStatus('✅ ¡Ambas caras capturadas! Genera el documento o envíalo por correo');
             }
         });
 
@@ -680,6 +735,55 @@
             showStatus(`🔄 Imagen rotada ${rotation} grados`);
         });
 
+        // Evento: Mostrar formulario de correo
+        sendEmailBtn.addEventListener('click', () => {
+            if (!capturedImages.front || !capturedImages.back) {
+                showStatus('❌ Necesitas capturar ambas caras de la identificación');
+                return;
+            }
+            
+            showElement(emailContainer);
+            showStatus('📧 Completa los datos para enviar por correo');
+        });
+
+        // Evento: Enviar correo
+        sendEmail.addEventListener('click', () => {
+            const to = emailTo.value;
+            const subject = emailSubject.value;
+            const body = emailBody.value;
+            
+            if (!to) {
+                showStatus('❌ Ingresa un correo destinatario');
+                return;
+            }
+            
+            // Crear enlace de correo con datos URI de las imágenes
+            const frontImageData = capturedImages.front.replace(/^data:image\/jpeg;base64,/, '');
+            const backImageData = capturedImages.back.replace(/^data:image\/jpeg;base64,/, '');
+            
+            // En un entorno real, aquí enviarías las imágenes a un servidor
+            // Por ahora, simulamos el envío mostrando un mensaje
+            showStatus('📧 Preparando envío de correo...');
+            
+            // Simulación de envío (en producción esto se haría con un backend)
+            setTimeout(() => {
+                hideElement(emailContainer);
+                showStatus('✅ Correo preparado para envío. En producción se enviaría automáticamente.');
+                
+                // En un entorno real, aquí se enviaría el correo con las imágenes adjuntas
+                console.log('Correo preparado para:', to);
+                console.log('Asunto:', subject);
+                console.log('Cuerpo:', body);
+                console.log('Imágenes capturadas:', capturedImages);
+            }, 1500);
+        });
+
+        // Evento: Cancelar envío de correo
+        cancelEmail.addEventListener('click', () => {
+            hideElement(emailContainer);
+            showStatus('Envío de correo cancelado');
+        });
+
         // Evento: Reiniciar la aplicación
         restartBtn.addEventListener('click', () => {
             // Limpiar todo
@@ -700,6 +804,8 @@
             hideElement(permissionInstructions);
             hideElement(sizeGuide);
             hideElement(finalDocument);
+            hideElement(previewImage);
+            hideElement(emailContainer);
             
             // Mostrar solo el botón de inicio
             showElement(startCameraBtn);
