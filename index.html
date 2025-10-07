@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escaner de Credenciales</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -382,6 +381,7 @@
             <ul>
                 <li>Haz clic en "Escanear Frente" para capturar el lado frontal de tu credencial</li>
                 <li>Haz clic en "Escanear Reverso" para capturar el lado posterior</li>
+                <li>Encuadra la credencial dentro del recuadro verde antes de capturar</li>
                 <li>Puedes rotar las imágenes después de capturarlas si es necesario</li>
                 <li>Una vez que tengas ambas imágenes, haz clic en "Generar PDF"</li>
                 <li>Finalmente, puedes "Descargar" el PDF o "Enviar por Correo"</li>
@@ -483,6 +483,10 @@
         let backRotation = 0;
         let pdfFile = null;
 
+        // Dimensiones del recuadro de recorte (proporción tarjeta de crédito/ID)
+        const CROP_WIDTH = 280;  // Ancho del recuadro verde
+        const CROP_HEIGHT = 180; // Alto del recuadro verde
+
         // Inicialización
         function init() {
             // Event listeners
@@ -534,7 +538,7 @@
             updateUI();
         }
 
-        // Capturar imagen
+        // Capturar y recortar imagen
         function captureImage() {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
@@ -546,8 +550,36 @@
             // Dibujar el frame actual del video en el canvas
             context.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
             
-            // Obtener la imagen como data URL
-            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            // Calcular posición del recuadro en el canvas
+            const videoRect = cameraFeed.getBoundingClientRect();
+            const cropGuide = document.querySelector('.crop-guide');
+            const cropRect = cropGuide.getBoundingClientRect();
+            
+            // Calcular factores de escala
+            const scaleX = canvas.width / videoRect.width;
+            const scaleY = canvas.height / videoRect.height;
+            
+            // Calcular coordenadas de recorte
+            const cropX = (cropRect.left - videoRect.left) * scaleX;
+            const cropY = (cropRect.top - videoRect.top) * scaleY;
+            const cropWidth = CROP_WIDTH * scaleX;
+            const cropHeight = CROP_HEIGHT * scaleY;
+            
+            // Crear un nuevo canvas para la imagen recortada
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = CROP_WIDTH;
+            croppedCanvas.height = CROP_HEIGHT;
+            const croppedContext = croppedCanvas.getContext('2d');
+            
+            // Dibujar solo el área recortada en el nuevo canvas
+            croppedContext.drawImage(
+                canvas,
+                cropX, cropY, cropWidth, cropHeight, // área de origen
+                0, 0, CROP_WIDTH, CROP_HEIGHT        // área de destino
+            );
+            
+            // Obtener la imagen recortada como data URL
+            const imageData = croppedCanvas.toDataURL('image/jpeg', 0.9);
             
             // Guardar la imagen según el lado actual
             if (currentSide === 'front') {
@@ -557,7 +589,7 @@
                 frontPreview.classList.add('filled');
                 frontPreview.querySelector('.preview-icon').style.display = 'none';
                 frontRotation = 0;
-                statusDiv.textContent = 'Frente de la credencial capturado correctamente';
+                statusDiv.textContent = 'Frente de la credencial capturado y recortado correctamente';
             } else {
                 backImageData = imageData;
                 backImage.src = imageData;
@@ -565,7 +597,7 @@
                 backPreview.classList.add('filled');
                 backPreview.querySelector('.preview-icon').style.display = 'none';
                 backRotation = 0;
-                statusDiv.textContent = 'Reverso de la credencial capturado correctamente';
+                statusDiv.textContent = 'Reverso de la credencial capturado y recortado correctamente';
             }
             
             statusDiv.className = 'status status-success';
@@ -613,12 +645,12 @@
             doc.setFontSize(10);
             doc.text(`Escaneado el: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 105, 22, { align: 'center' });
             
-            // Agregar frente de la credencial
+            // Agregar frente de la credencial (ajustado al tamaño del recuadro)
             doc.addImage(frontImageData, 'JPEG', 20, 30, 80, 60);
             doc.setFontSize(12);
             doc.text('Frente', 60, 95, { align: 'center' });
             
-            // Agregar reverso de la credencial
+            // Agregar reverso de la credencial (ajustado al tamaño del recuadro)
             doc.addImage(backImageData, 'JPEG', 110, 30, 80, 60);
             doc.text('Reverso', 150, 95, { align: 'center' });
             
