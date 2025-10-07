@@ -1,289 +1,619 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>ID Camera App - SEARS</title>
-<meta name="theme-color" content="#ef4444" />
-<script src="https://cdn.tailwindcss.com"></script>
-<style>
-  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f8fafc;color:#111}
-  .card{max-width:820px;margin:28px auto;padding:18px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.08)}
-  video, canvas, img{max-width:100%;border-radius:10px;border:1px solid #e6e7eb}
-  .hidden{display:none!important}
-  .small{font-size:13px;color:#6b7280}
-  .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#ef4444;color:#fff;font-weight:600;border:none}
-  .btn-ghost{background:#f3f4f6;color:#111}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escaner de Credenciales</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1e3c72;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title i {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-box {
+            width: 180px;
+            height: 120px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9f9f9;
+            transition: all 0.3s;
+        }
+
+        .preview-box.filled {
+            border-color: #4CAF50;
+            background-color: #f0f9f0;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            display: none;
+        }
+
+        .preview-text {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .preview-icon {
+            font-size: 24px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+        }
+
+        .btn i {
+            margin-right: 8px;
+        }
+
+        .btn-scan {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .btn-scan:hover {
+            background-color: #3d8b40;
+            transform: translateY(-2px);
+        }
+
+        .btn-generate {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .btn-generate:hover {
+            background-color: #0b7dda;
+            transform: translateY(-2px);
+        }
+
+        .btn-download {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .btn-download:hover {
+            background-color: #e68900;
+            transform: translateY(-2px);
+        }
+
+        .btn-email {
+            background-color: #9C27B0;
+            color: white;
+        }
+
+        .btn-email:hover {
+            background-color: #7b1fa2;
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .camera-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .camera-view {
+            width: 100%;
+            max-width: 500px;
+            height: auto;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #camera-feed {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn-capture {
+            background-color: #f44336;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .btn-cancel {
+            background-color: #757575;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .status-info {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .instructions {
+            background-color: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .instructions h3 {
+            color: #0d47a1;
+            margin-bottom: 10px;
+        }
+
+        .instructions ul {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .preview-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="card">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="background:#ef4444;color:#fff;font-weight:700;padding:10px 14px;border-radius:8px">SEARS</div>
-    <h1 style="margin:0;font-size:20px">ID Camera App</h1>
-  </div>
+    <div class="container">
+        <header>
+            <h1>Escaner de Credenciales</h1>
+            <p class="subtitle">Digitaliza el frente y reverso de tu identificación</p>
+        </header>
 
-  <p class="small" style="margin-top:8px">Usa la cámara trasera. Funciona en HTTPS o localhost. No se adjuntan imágenes automáticamente al correo; debes adjuntarlas manualmente.</p>
+        <div class="instructions">
+            <h3>Instrucciones:</h3>
+            <ul>
+                <li>Haz clic en "Escanear Frente" para capturar el lado frontal de tu credencial</li>
+                <li>Haz clic en "Escanear Reverso" para capturar el lado posterior</li>
+                <li>Una vez que tengas ambas imágenes, haz clic en "Generar Archivo"</li>
+                <li>Finalmente, puedes "Descargar" el archivo o "Enviar por Correo"</li>
+            </ul>
+        </div>
 
-  <div id="live-area" style="margin-top:12px">
-    <video id="video" autoplay playsinline muted class="" style="background:#000;display:none"></video>
-    <div id="video-placeholder" style="width:100%;height:240px;background:#111;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff">Live view aparecerá aquí</div>
-    <div id="live-instructions" class="small" style="margin-top:6px">Pulsa "Abrir cámara" y espera a que aparezca el video.</div>
-  </div>
+        <div class="card">
+            <div class="card-title">
+                <i>📷</i> Vista Previa
+            </div>
+            <div class="preview-container">
+                <div class="preview-box" id="front-preview">
+                    <div class="preview-icon">🆔</div>
+                    <div class="preview-text">Frente</div>
+                    <img class="preview-image" id="front-image" alt="Frente de credencial">
+                </div>
+                <div class="preview-box" id="back-preview">
+                    <div class="preview-icon">🆔</div>
+                    <div class="preview-text">Reverso</div>
+                    <img class="preview-image" id="back-image" alt="Reverso de credencial">
+                </div>
+            </div>
+            <div id="status" class="status status-info">
+                Presiona "Escanear Frente" para comenzar
+            </div>
+        </div>
 
-  <div style="margin-top:12px" class="grid2">
-    <div>
-      <button id="startBtn" class="btn" type="button">📷 Abrir cámara</button>
+        <div class="controls">
+            <button class="btn btn-scan" id="scan-front">
+                <i>📷</i> Escanear Frente
+            </button>
+            <button class="btn btn-scan" id="scan-back">
+                <i>📷</i> Escanear Reverso
+            </button>
+            <button class="btn btn-generate" id="generate-file" disabled>
+                <i>📦</i> Generar Archivo
+            </button>
+            <button class="btn btn-download" id="download" disabled>
+                <i>💾</i> Descargar
+            </button>
+            <button class="btn btn-email" id="send-email" disabled>
+                <i>✉️</i> Enviar por Correo
+            </button>
+        </div>
     </div>
-    <div>
-      <button id="takeBtn" class="btn btn-ghost" type="button" disabled>📸 Tomar foto</button>
+
+    <div class="camera-container" id="camera-container">
+        <div class="camera-view">
+            <video id="camera-feed" autoplay playsinline></video>
+        </div>
+        <div class="camera-controls">
+            <button class="btn-capture" id="capture">
+                <i>📸</i> Capturar
+            </button>
+            <button class="btn-cancel" id="cancel-camera">
+                <i>❌</i> Cancelar
+            </button>
+        </div>
     </div>
-  </div>
 
-  <div style="margin-top:12px" class="grid2">
-    <div>
-      <div class="small">Lado actual: <strong id="sideLabel">FRONTAL</strong></div>
-      <img id="previewFront" class="hidden" alt="Frontal preview">
-      <div id="front-actions" class="small hidden" style="margin-top:6px">
-        <button id="downloadFront" class="btn-ghost" type="button">Descargar frontal (JPG)</button>
-      </div>
-    </div>
-    <div>
-      <div class="small">Reverso: <strong id="sideLabel2">PENDIENTE</strong></div>
-      <img id="previewBack" class="hidden" alt="Reverso preview">
-      <div id="back-actions" class="small hidden" style="margin-top:6px">
-        <button id="downloadBack" class="btn-ghost" type="button">Descargar reverso (JPG)</button>
-      </div>
-    </div>
-  </div>
+    <footer>
+        <p>Aplicación web para escanear credenciales - Funciona 100% en el navegador</p>
+    </footer>
 
-  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
-    <button id="restartBtn" class="btn-ghost" type="button">🔁 Reiniciar</button>
-    <button id="openMailBtn" class="btn" type="button">✉️ Abrir correo (preparado)</button>
-    <button id="showDocBtn" class="btn-ghost" type="button">📄 Generar vista impresión</button>
-  </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        // Elementos DOM
+        const scanFrontBtn = document.getElementById('scan-front');
+        const scanBackBtn = document.getElementById('scan-back');
+        const generateFileBtn = document.getElementById('generate-file');
+        const downloadBtn = document.getElementById('download');
+        const sendEmailBtn = document.getElementById('send-email');
+        const cameraContainer = document.getElementById('camera-container');
+        const cameraFeed = document.getElementById('camera-feed');
+        const captureBtn = document.getElementById('capture');
+        const cancelCameraBtn = document.getElementById('cancel-camera');
+        const frontPreview = document.getElementById('front-preview');
+        const backPreview = document.getElementById('back-preview');
+        const frontImage = document.getElementById('front-image');
+        const backImage = document.getElementById('back-image');
+        const statusDiv = document.getElementById('status');
 
-  <p id="status" class="small" style="margin-top:10px"></p>
+        // Variables de estado
+        let stream = null;
+        let currentSide = null;
+        let frontImageData = null;
+        let backImageData = null;
+        let zipFile = null;
 
-  <!-- hidden canvases -->
-  <canvas id="captureCanvas" class="hidden"></canvas>
+        // Inicialización
+        function init() {
+            // Event listeners
+            scanFrontBtn.addEventListener('click', () => openCamera('front'));
+            scanBackBtn.addEventListener('click', () => openCamera('back'));
+            generateFileBtn.addEventListener('click', generateZipFile);
+            downloadBtn.addEventListener('click', downloadZipFile);
+            sendEmailBtn.addEventListener('click', sendEmail);
+            captureBtn.addEventListener('click', captureImage);
+            cancelCameraBtn.addEventListener('click', closeCamera);
+            
+            updateUI();
+        }
 
-  <!-- Documento simple para imprimir -->
-  <div id="printDoc" class="hidden" style="margin-top:18px;padding:16px;border:1px dashed #e5e7eb;border-radius:8px;background:#fff">
-    <h3 style="margin:0 0 8px 0">Documento generado</h3>
-    <div style="display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1 1 240px"><img id="docFront" alt="Frontal doc" style="border:1px solid #e6e7eb"></div>
-      <div style="flex:1 1 240px"><img id="docBack" alt="Reverso doc" style="border:1px solid #e6e7eb"></div>
-    </div>
-    <p class="small" style="margin-top:8px">Imprime con Ctrl+P o usa la función de impresión del móvil.</p>
-  </div>
-</div>
+        // Abrir cámara
+        async function openCamera(side) {
+            currentSide = side;
+            
+            try {
+                // Solicitar acceso a la cámara trasera
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                
+                cameraFeed.srcObject = stream;
+                cameraContainer.style.display = 'flex';
+                statusDiv.textContent = `Listo para capturar el ${side === 'front' ? 'FRENTE' : 'REVERSO'} de la credencial`;
+                statusDiv.className = 'status status-info';
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                statusDiv.textContent = 'Error: No se pudo acceder a la cámara. Asegúrate de permitir el acceso.';
+                statusDiv.className = 'status status-error';
+            }
+        }
 
-<script>
-/*
-  Flujo:
-  - start camera (try facingMode:environment, fallback video:true)
-  - show live view
-  - take photo: capture currentSide (front then back)
-  - for back: restart camera then take photo
-  - save JPG dataURLs and provide download links
-  - open mailto: with subject/body (images cannot be auto-attached)
-*/
+        // Cerrar cámara
+        function closeCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            cameraContainer.style.display = 'none';
+            updateUI();
+        }
 
-const startBtn = document.getElementById('startBtn');
-const takeBtn = document.getElementById('takeBtn');
-const restartBtn = document.getElementById('restartBtn');
-const openMailBtn = document.getElementById('openMailBtn');
-const video = document.getElementById('video');
-const placeholder = document.getElementById('video-placeholder');
-const status = document.getElementById('status');
-const captureCanvas = document.getElementById('captureCanvas');
-const previewFront = document.getElementById('previewFront');
-const previewBack = document.getElementById('previewBack');
-const downloadFront = document.getElementById('downloadFront');
-const downloadBack = document.getElementById('downloadBack');
-const sideLabel = document.getElementById('sideLabel');
-const sideLabel2 = document.getElementById('sideLabel2');
-const showDocBtn = document.getElementById('showDocBtn');
-const printDoc = document.getElementById('printDoc');
-const docFront = document.getElementById('docFront');
-const docBack = document.getElementById('docBack');
+        // Capturar imagen
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Configurar canvas con las dimensiones del video
+            canvas.width = cameraFeed.videoWidth;
+            canvas.height = cameraFeed.videoHeight;
+            
+            // Dibujar el frame actual del video en el canvas
+            context.drawImage(cameraFeed, 0, 0, canvas.width, canvas.height);
+            
+            // Obtener la imagen como data URL
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+            
+            // Guardar la imagen según el lado actual
+            if (currentSide === 'front') {
+                frontImageData = imageData;
+                frontImage.src = imageData;
+                frontImage.style.display = 'block';
+                frontPreview.classList.add('filled');
+                frontPreview.querySelector('.preview-icon').style.display = 'none';
+                statusDiv.textContent = 'Frente de la credencial capturado correctamente';
+            } else {
+                backImageData = imageData;
+                backImage.src = imageData;
+                backImage.style.display = 'block';
+                backPreview.classList.add('filled');
+                backPreview.querySelector('.preview-icon').style.display = 'none';
+                statusDiv.textContent = 'Reverso de la credencial capturado correctamente';
+            }
+            
+            statusDiv.className = 'status status-success';
+            closeCamera();
+            updateUI();
+        }
 
-let stream = null;
-let currentSide = 'front'; // front -> then back
-let images = { front: null, back: null };
+        // Generar archivo ZIP
+        function generateZipFile() {
+            if (!frontImageData || !backImageData) {
+                statusDiv.textContent = 'Error: Debes capturar ambas caras de la credencial primero';
+                statusDiv.className = 'status status-error';
+                return;
+            }
+            
+            statusDiv.textContent = 'Generando archivo ZIP...';
+            statusDiv.className = 'status status-info';
+            
+            // Crear instancia de JSZip
+            const zip = new JSZip();
+            
+            // Convertir data URLs a blobs
+            const frontBlob = dataURLToBlob(frontImageData);
+            const backBlob = dataURLToBlob(backImageData);
+            
+            // Agregar imágenes al ZIP
+            zip.file("frente_credencial.jpg", frontBlob);
+            zip.file("reverso_credencial.jpg", backBlob);
+            
+            // Generar el ZIP
+            zip.generateAsync({type:"blob"})
+            .then(function(content) {
+                zipFile = content;
+                statusDiv.textContent = 'Archivo ZIP generado correctamente. Ahora puedes descargarlo o enviarlo por correo.';
+                statusDiv.className = 'status status-success';
+                downloadBtn.disabled = false;
+                sendEmailBtn.disabled = false;
+            })
+            .catch(function(error) {
+                console.error('Error al generar ZIP:', error);
+                statusDiv.textContent = 'Error al generar el archivo ZIP';
+                statusDiv.className = 'status status-error';
+            });
+        }
 
-// Helpers
-function setStatus(txt) { status.textContent = txt; }
-function showVideo() { video.style.display='block'; placeholder.style.display='none'; }
-function hideVideo() { video.style.display='none'; placeholder.style.display='flex'; }
+        // Descargar archivo ZIP
+        function downloadZipFile() {
+            if (!zipFile) {
+                statusDiv.textContent = 'Error: Primero debes generar el archivo';
+                statusDiv.className = 'status status-error';
+                return;
+            }
+            
+            // Usar FileSaver.js para descargar el archivo
+            saveAs(zipFile, "credencial_escaneada.zip");
+            statusDiv.textContent = 'Archivo descargado correctamente';
+            statusDiv.className = 'status status-success';
+        }
 
-// Start camera: prefer rear camera, fallback to default
-async function startCamera() {
-  setStatus('Solicitando cámara...');
-  takeBtn.disabled = true;
-  try {
-    // First try forcing environment (rear). Some browsers reject exact constraint, so try loose then exact fallback.
-    const constraintsList = [
-      { video: { facingMode: { ideal: 'environment' }, width:{ideal:1280}, height:{ideal:720} } },
-      { video: { facingMode: 'environment' } },
-      { video: true }
-    ];
-    let got = false;
-    for (const c of constraintsList) {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia(c);
-        stream = s;
-        got = true;
-        break;
-      } catch (err) {
-        // continue to next fallback
-      }
-    }
-    if (!got) throw new Error('No se pudo acceder a la cámara');
-    video.srcObject = stream;
-    showVideo();
-    setStatus('Cámara activa. Pulsa "Tomar foto".');
-    takeBtn.disabled = false;
-  } catch (e) {
-    console.error(e);
-    setStatus('Error al acceder a la cámara. Revisa permisos y que la página esté en HTTPS o localhost.');
-    takeBtn.disabled = true;
-  }
-}
+        // Enviar por correo
+        function sendEmail() {
+            if (!zipFile) {
+                statusDiv.textContent = 'Error: Primero debes generar el archivo';
+                statusDiv.className = 'status status-error';
+                return;
+            }
+            
+            // Convertir el blob a un objeto File
+            const file = new File([zipFile], "credencial_escaneada.zip", { type: "application/zip" });
+            
+            // Crear un objeto URL para el archivo
+            const fileURL = URL.createObjectURL(file);
+            
+            // Crear un enlace de correo con el archivo adjunto
+            const subject = "Credencial Escaneada";
+            const body = "Adjunto encontrarás las imágenes escaneadas de mi credencial.";
+            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            
+            // Crear un enlace temporal para descargar el archivo
+            // Nota: No podemos adjuntar directamente el archivo al correo desde el navegador
+            // En su lugar, informamos al usuario
+            statusDiv.textContent = 'Para enviar por correo: 1) Descarga el archivo ZIP 2) Ábrelo en tu cliente de correo 3) Adjunta el archivo descargado';
+            statusDiv.className = 'status status-info';
+            
+            // Alternativa: Abrir cliente de correo con instrucciones
+            window.location.href = mailtoLink;
+        }
 
-// Stop camera
-function stopCamera() {
-  if (!stream) return;
-  stream.getTracks().forEach(t => t.stop());
-  stream = null;
-  hideVideo();
-  setStatus('Cámara detenida.');
-}
+        // Convertir data URL a Blob
+        function dataURLToBlob(dataURL) {
+            const parts = dataURL.split(';base64,');
+            const contentType = parts[0].split(':')[1];
+            const raw = window.atob(parts[1]);
+            const rawLength = raw.length;
+            const uInt8Array = new Uint8Array(rawLength);
+            
+            for (let i = 0; i < rawLength; ++i) {
+                uInt8Array[i] = raw.charCodeAt(i);
+            }
+            
+            return new Blob([uInt8Array], { type: contentType });
+        }
 
-// Capture current frame to JPG dataURL
-function captureJPG(quality = 0.92) {
-  if (!video || video.videoWidth === 0) {
-    // fallback draw placeholder if video not available (shouldn't happen)
-    setStatus('Error: video no disponible para capturar.');
-    return null;
-  }
-  const w = video.videoWidth;
-  const h = video.videoHeight;
-  captureCanvas.width = w;
-  captureCanvas.height = h;
-  const ctx = captureCanvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, w, h);
-  return captureCanvas.toDataURL('image/jpeg', quality);
-}
+        // Actualizar interfaz de usuario
+        function updateUI() {
+            // Habilitar/deshabilitar botones según el estado
+            generateFileBtn.disabled = !(frontImageData && backImageData);
+            
+            // Actualizar texto de estado si es necesario
+            if (frontImageData && backImageData && !zipFile) {
+                statusDiv.textContent = 'Ambas caras de la credencial capturadas. Presiona "Generar Archivo" para continuar.';
+                statusDiv.className = 'status status-info';
+            }
+        }
 
-// Download helper
-function downloadDataURL(dataURL, filename) {
-  const a = document.createElement('a');
-  a.href = dataURL;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-// UI Flow handlers
-startBtn.addEventListener('click', async () => {
-  await startCamera();
-});
-
-takeBtn.addEventListener('click', async () => {
-  if (!stream) { setStatus('Cámara no activa. Pulsa "Abrir cámara".'); return; }
-  setStatus('Capturando ' + currentSide + '...');
-  const data = captureJPG(0.92);
-  if (!data) { setStatus('Error al capturar.'); return; }
-
-  const ts = new Date().toISOString().slice(0,19).replace(/[:.]/g,'-');
-  if (currentSide === 'front') {
-    images.front = data;
-    previewFront.src = data;
-    previewFront.classList.remove('hidden');
-    downloadFront.parentElement.classList.remove('hidden');
-    downloadFront.onclick = () => downloadDataURL(images.front, `identificacion-frontal-${ts}.jpg`);
-    sideLabel2.textContent = 'PENDIENTE';
-    setStatus('Frontal guardado. Ahora capture el reverso.');
-    // prepare for back: stop and allow user to restart camera
-    stopCamera();
-    currentSide = 'back';
-    sideLabel.textContent = 'REVERSO (preparar)';
-    // auto-restart camera after short delay to simplify flow
-    setTimeout(async () => {
-      sideLabel.textContent = 'REVERSO';
-      await startCamera();
-    }, 600);
-  } else {
-    images.back = data;
-    previewBack.src = data;
-    previewBack.classList.remove('hidden');
-    downloadBack.parentElement.classList.remove('hidden');
-    downloadBack.onclick = () => downloadDataURL(images.back, `identificacion-reverso-${ts}.jpg`);
-    setStatus('Reverso guardado. Listo para descargar o enviar.');
-    stopCamera();
-    currentSide = 'done';
-    sideLabel.textContent = 'COMPLETADO';
-    sideLabel2.textContent = 'LISTO';
-    // set doc images
-    docFront.src = images.front || '';
-    docBack.src = images.back || '';
-  }
-});
-
-// restart button clears and reloads state
-restartBtn.addEventListener('click', () => {
-  stopCamera();
-  images = { front: null, back: null };
-  previewFront.src = ''; previewBack.src = '';
-  previewFront.classList.add('hidden'); previewBack.classList.add('hidden');
-  downloadFront.parentElement.classList.add('hidden'); downloadBack.parentElement.classList.add('hidden');
-  sideLabel.textContent = 'FRONTAL';
-  sideLabel2.textContent = 'PENDIENTE';
-  currentSide = 'front';
-  setStatus('Reiniciado. Pulsa "Abrir cámara" para comenzar.');
-  printDoc.classList.add('hidden');
-});
-
-// open mail client (mailto) - cannot attach files; instruction included
-openMailBtn.addEventListener('click', () => {
-  const subject = encodeURIComponent('Identificaciones SEARS - [Nombre cliente]');
-  let body = 'Adjunto frontal y reverso de identificación.\n\nInstrucciones:\n- Adjunta los archivos JPG descargados desde la aplicación.\n- Nombre sugerido: identificacion-frontal-YYYY-MM-DDThh-mm-ss.jpg\n\nAtentamente,\n';
-  body = encodeURIComponent(body);
-  // mailto
-  const mailto = `mailto:?subject=${subject}&body=${body}`;
-  window.location.href = mailto;
-  setStatus('Se abrió el cliente de correo. Adjunta manualmente las imágenes descargadas.');
-});
-
-// show printable doc
-showDocBtn.addEventListener('click', () => {
-  if (!images.front || !images.back) {
-    setStatus('Necesitas ambas imágenes para generar vista de impresión.');
-    return;
-  }
-  docFront.src = images.front;
-  docBack.src = images.back;
-  printDoc.classList.remove('hidden');
-  printDoc.scrollIntoView({behavior:'smooth'});
-  setStatus('Vista de documento lista. Usa imprimir del navegador si deseas una copia física.');
-});
-
-// keyboard/mobile back handling: when page unload, stop camera
-window.addEventListener('pagehide', () => stopCamera());
-window.addEventListener('unload', () => stopCamera());
-
-// initial UI state
-(function init(){
-  setStatus('Listo. Pulsa "Abrir cámara". Asegúrate de que el sitio esté en HTTPS o uses localhost.');
-  previewFront.classList.add('hidden');
-  previewBack.classList.add('hidden');
-  downloadFront.parentElement.classList.add('hidden');
-  downloadBack.parentElement.classList.add('hidden');
-})();
-</script>
+        // Inicializar la aplicación cuando se carga la página
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
 </body>
 </html>
