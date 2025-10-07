@@ -15,14 +15,16 @@
             -moz-osx-font-smoothing: grayscale;
         }
         #camera-feed {
-            max-width: 100%;
+            width: 100%;
+            max-width: 400px;
             height: auto;
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             display: none;
         }
         #cropped-canvas {
-            max-width: 100%;
+            width: 100%;
+            max-width: 400px;
             height: auto;
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -33,15 +35,24 @@
             position: relative;
             display: none;
             width: 100%;
+            max-width: 400px;
             height: auto;
         }
         #crop-box {
             position: absolute;
-            border: 2px dashed #FFF;
-            background-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+            border: 3px dashed #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
             cursor: move;
             display: none;
+            pointer-events: auto;
+        }
+        #result-canvas {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border-radius: 0.75rem;
+            border: 2px solid #e5e7eb;
         }
         .loading-spinner {
             border: 3px solid #f3f3f3;
@@ -56,40 +67,49 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Mejoras para móvil */
+        .btn-mobile {
+            padding: 12px 20px;
+            font-size: 16px;
+            min-height: 50px;
+        }
+        .container-mobile {
+            max-width: 95%;
+            margin: 10px auto;
+        }
     </style>
 </head>
-<body class="bg-red-600 dark:bg-red-800 text-gray-800 dark:text-gray-200 p-4 min-h-screen flex flex-col items-center justify-center">
+<body class="bg-red-600 text-gray-800 p-3 min-h-screen flex flex-col items-center justify-center">
 
-    <div class="relative max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 space-y-6 flex flex-col items-center">
+    <div class="relative container-mobile w-full bg-white rounded-xl shadow-2xl p-4 space-y-4 flex flex-col items-center">
         <!-- Logo en la esquina superior izquierda -->
-        <div class="absolute top-4 left-4 w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+        <div class="absolute top-3 left-3 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
             SEARS
         </div>
 
         <!-- Título de la aplicación -->
-        <h1 class="text-3xl font-bold text-center text-gray-900 dark:text-white mt-8">ID Camera App</h1>
+        <h1 class="text-2xl font-bold text-center text-gray-900 mt-6">ID Camera App</h1>
         <!-- Logo de Crédito Sears -->
-        <div class="font-bold text-2xl text-center text-indigo-600 dark:text-indigo-400 tracking-wider">
+        <div class="font-bold text-xl text-center text-indigo-600 tracking-wider">
             CRÉDITO SEARS
         </div>
-        <p class="text-sm text-center text-gray-500 dark:text-gray-400">Toma una foto, recorta y envía por correo electrónico.</p>
+        <p class="text-xs text-center text-gray-500">Toma una foto, recorta y envía por correo</p>
 
         <!-- Contenedor principal de la aplicación -->
-        <div id="app-container" class="w-full flex flex-col items-center space-y-4">
+        <div id="app-container" class="w-full flex flex-col items-center space-y-3">
 
             <!-- Mensajes de estado -->
-            <div id="status-message" class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-opacity duration-300 text-center">
+            <div id="status-message" class="text-sm font-medium text-gray-600 text-center min-h-20px">
                 Pulsa "Abrir cámara" para empezar.
             </div>
             
             <!-- Contenedor para instrucciones de permiso -->
-            <div id="permission-instructions" class="w-full bg-red-100 dark:bg-red-800 p-4 rounded-lg text-red-700 dark:text-red-200 hidden">
-                <h3 class="font-bold text-lg mb-2">Permiso de cámara denegado</h3>
-                <p class="mb-2">Para usar esta aplicación, necesitas permitir el acceso a la cámara:</p>
-                <ul class="list-disc list-inside space-y-1 text-sm">
-                    <li><strong>Chrome/Edge:</strong> Haz clic en el icono de cámara bloqueada en la barra de direcciones</li>
-                    <li><strong>Firefox:</strong> Ve a Configuración > Privacidad y Seguridad > Permisos de la cámara</li>
-                    <li><strong>Safari:</strong> Preferencias > Sitios web > Cámara</li>
+            <div id="permission-instructions" class="w-full bg-red-100 p-3 rounded-lg text-red-700 hidden">
+                <h3 class="font-bold text-base mb-2">Permiso de cámara denegado</h3>
+                <p class="mb-2 text-sm">Para usar esta aplicación, necesitas permitir el acceso a la cámara:</p>
+                <ul class="list-disc list-inside space-y-1 text-xs">
+                    <li><strong>Chrome/Edge:</strong> Haz clic en el icono de cámara bloqueada</li>
+                    <li><strong>Safari:</strong> Ajustes > Safari > Cámara</li>
                 </ul>
             </div>
 
@@ -102,41 +122,51 @@
             <canvas id="photo-canvas" class="hidden"></canvas>
 
             <!-- Contenedor para el recorte -->
-            <div id="crop-container" class="w-full flex justify-center mt-4 relative">
+            <div id="crop-container" class="w-full flex justify-center mt-2 relative">
                 <canvas id="cropped-canvas" class="rounded-lg shadow-md"></canvas>
                 <div id="crop-box"></div>
             </div>
 
             <!-- Botones de acción -->
-            <div id="button-container" class="w-full flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-4 mt-4">
-                <button id="start-camera" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+            <div id="button-container" class="w-full flex flex-col space-y-2 mt-3">
+                <button id="start-camera" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
                     📷 Abrir cámara
                 </button>
-                <button id="take-photo" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
+                <button id="take-photo" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
                     📸 Tomar foto
                 </button>
-                <button id="crop-photo" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
-                    ✂️ Recortar
+                <button id="crop-photo" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
+                    ✂️ Recortar área seleccionada
                 </button>
             </div>
 
+            <!-- Selector de correo -->
+            <div id="email-selector" class="w-full mt-3 hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Enviar a:</label>
+                <select id="email-select" class="w-full p-3 border border-gray-300 rounded-lg bg-white">
+                    <option value="rst0113@sears.com.mx">rst0113@sears.com.mx</option>
+                    <option value="gc0113@sears.com.mx">gc0113@sears.com.mx</option>
+                </select>
+            </div>
+
             <!-- Área de resultados -->
-            <div id="result-area" class="w-full flex flex-col items-center space-y-4 mt-4 hidden">
-                <p class="text-center text-gray-600 dark:text-gray-400 font-medium">Imagen recortada:</p>
-                <canvas id="result-canvas" class="rounded-lg shadow-md max-w-full h-auto border-2 border-gray-300 dark:border-gray-700"></canvas>
-                <div class="w-full flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-4">
-                    <button id="download-btn" class="w-full md:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
-                        💾 Descargar
+            <div id="result-area" class="w-full flex flex-col items-center space-y-3 mt-3 hidden">
+                <p class="text-center text-gray-600 font-medium">Imagen recortada:</p>
+                <canvas id="result-canvas" class="rounded-lg shadow-md"></canvas>
+                
+                <div class="w-full flex flex-col space-y-2">
+                    <button id="download-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
+                        💾 Descargar imagen
                     </button>
-                    <button id="rotate-btn" class="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+                    <button id="rotate-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
                         🔄 Rotar 90°
                     </button>
-                    <button id="email-link" class="w-full md:w-auto bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
-                    ✉️ Enviar correo
+                    <button id="email-link" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
+                        ✉️ Enviar por correo
                     </button>
                 </div>
-                <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mt-4 font-medium">
-                    🔁 Volver a empezar
+                <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 mt-2 font-medium">
+                    🔁 Tomar otra foto
                 </button>
             </div>
         </div>
@@ -160,11 +190,13 @@
         const resultArea = document.getElementById('result-area');
         const cropContainer = document.getElementById('crop-container');
         const permissionInstructions = document.getElementById('permission-instructions');
+        const emailSelector = document.getElementById('email-selector');
+        const emailSelect = document.getElementById('email-select');
 
         let stream = null;
         let originalImage = null;
         let isCropping = false;
-        let startX, startY, endX, endY;
+        let startX, startY;
         let rotation = 0;
         let cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
 
@@ -176,11 +208,9 @@
         // Función para cambiar la visibilidad de los elementos
         function showElement(el) { 
             el.classList.remove('hidden'); 
-            el.style.display = 'block';
         }
         function hideElement(el) { 
             el.classList.add('hidden'); 
-            el.style.display = 'none';
         }
 
         // Evento: Iniciar la cámara
@@ -189,7 +219,7 @@
             hideElement(permissionInstructions);
             
             try {
-                // Intentar con la cámara trasera primero
+                // Intentar con la cámara trasera primero (para documentos)
                 const constraints = {
                     video: {
                         facingMode: 'environment',
@@ -204,7 +234,7 @@
                 showElement(cameraFeed);
                 hideElement(startCameraBtn);
                 showElement(takePhotoBtn);
-                showStatus('✅ Cámara lista. Apunta la identificación y pulsa "Tomar foto"');
+                showStatus('✅ Cámara lista. Enfoca la identificación y pulsa "Tomar foto"');
                 
             } catch (error) {
                 console.error('Error al acceder a la cámara:', error);
@@ -213,7 +243,20 @@
                     showStatus('❌ Permiso de cámara denegado');
                     showElement(permissionInstructions);
                 } else if (error.name === 'NotFoundError') {
-                    showStatus('❌ No se encontró ninguna cámara');
+                    showStatus('❌ No se encontró cámara trasera, intentando con frontal...');
+                    // Intentar con cámara frontal
+                    try {
+                        const constraints = { video: { facingMode: 'user' } };
+                        stream = await navigator.mediaDevices.getUserMedia(constraints);
+                        cameraFeed.srcObject = stream;
+                        showElement(cameraFeed);
+                        hideElement(startCameraBtn);
+                        showElement(takePhotoBtn);
+                        showStatus('✅ Cámara frontal lista. Enfoca la identificación');
+                    } catch (error2) {
+                        showStatus('❌ Error al acceder a cualquier cámara');
+                        showElement(permissionInstructions);
+                    }
                 } else {
                     showStatus('❌ Error al acceder a la cámara');
                 }
@@ -258,36 +301,39 @@
             const cropContext = croppedCanvas.getContext('2d');
             cropContext.drawImage(photoCanvas, 0, 0);
             
-            // Inicializar el cuadro de recorte
+            // Inicializar el cuadro de recorte adaptado a móvil
             initializeCropBox();
             
-            showStatus('⬅️➡️ Arrastra para seleccionar el área de la identificación');
+            showStatus('⬅️➡️ Arrastra el cuadro verde para ajustar el área de la identificación');
             showElement(cropPhotoBtn);
         });
 
-        // Inicializar el cuadro de recorte
+        // Inicializar el cuadro de recorte optimizado para móvil
         function initializeCropBox() {
             const canvas = croppedCanvas;
             const rect = canvas.getBoundingClientRect();
             
-            // Tamaño inicial del cuadro de recorte (80% del canvas)
-            const boxWidth = canvas.width * 0.8;
-            const boxHeight = canvas.height * 0.6;
+            // Tamaño optimizado para identificación en móvil (más pequeño)
+            const boxWidth = Math.min(canvas.width * 0.7, 300); // Máximo 300px
+            const boxHeight = boxWidth * 0.63; // Proporción estándar de ID
             const boxX = (canvas.width - boxWidth) / 2;
             const boxY = (canvas.height - boxHeight) / 2;
             
             // Configurar el cuadro de recorte
             cropBox.style.position = 'absolute';
-            cropBox.style.border = '2px dashed #00ff00';
-            cropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            cropBox.style.border = '3px dashed #00ff00';
+            cropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.15)';
             cropBox.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)';
             cropBox.style.cursor = 'move';
             
-            // Posicionar el cuadro
-            cropBox.style.left = boxX + 'px';
-            cropBox.style.top = boxY + 'px';
-            cropBox.style.width = boxWidth + 'px';
-            cropBox.style.height = boxHeight + 'px';
+            // Posicionar el cuadro relativo al canvas
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            cropBox.style.left = (boxX / scaleX) + 'px';
+            cropBox.style.top = (boxY / scaleY) + 'px';
+            cropBox.style.width = (boxWidth / scaleX) + 'px';
+            cropBox.style.height = (boxHeight / scaleY) + 'px';
             
             showElement(cropBox);
             
@@ -300,9 +346,9 @@
             };
         }
 
-        // Eventos para arrastrar el cuadro de recorte
+        // Eventos para arrastrar el cuadro de recorte (mejorado para touch)
         cropBox.addEventListener('mousedown', startDragging);
-        cropBox.addEventListener('touchstart', startDragging);
+        cropBox.addEventListener('touchstart', startDragging, { passive: false });
 
         function startDragging(e) {
             e.preventDefault();
@@ -310,15 +356,15 @@
             
             const rect = croppedCanvas.getBoundingClientRect();
             if (e.type === 'mousedown') {
-                startX = e.clientX - rect.left;
-                startY = e.clientY - rect.top;
+                startX = e.clientX;
+                startY = e.clientY;
             } else {
-                startX = e.touches[0].clientX - rect.left;
-                startY = e.touches[0].clientY - rect.top;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
             }
             
             document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag);
+            document.addEventListener('touchmove', drag, { passive: false });
             document.addEventListener('mouseup', stopDragging);
             document.addEventListener('touchend', stopDragging);
         }
@@ -327,27 +373,36 @@
             if (!isCropping) return;
             e.preventDefault();
             
-            const rect = croppedCanvas.getBoundingClientRect();
             let currentX, currentY;
             
             if (e.type === 'mousemove') {
-                currentX = e.clientX - rect.left;
-                currentY = e.clientY - rect.top;
+                currentX = e.clientX;
+                currentY = e.clientY;
             } else {
-                currentX = e.touches[0].clientX - rect.left;
-                currentY = e.touches[0].clientY - rect.top;
+                currentX = e.touches[0].clientX;
+                currentY = e.touches[0].clientY;
             }
             
             const deltaX = currentX - startX;
             const deltaY = currentY - startY;
             
-            // Calcular nueva posición manteniendo el cuadro dentro del canvas
-            const newX = Math.max(0, Math.min(croppedCanvas.width - cropCoordinates.width, cropCoordinates.x + deltaX));
-            const newY = Math.max(0, Math.min(croppedCanvas.height - cropCoordinates.height, cropCoordinates.y + deltaY));
+            const rect = croppedCanvas.getBoundingClientRect();
+            const scaleX = croppedCanvas.width / rect.width;
+            const scaleY = croppedCanvas.height / rect.height;
             
-            // Actualizar posición
-            cropBox.style.left = newX + 'px';
-            cropBox.style.top = newY + 'px';
+            // Calcular nueva posición manteniendo el cuadro dentro del canvas
+            const newX = Math.max(0, Math.min(
+                croppedCanvas.width - cropCoordinates.width, 
+                cropCoordinates.x + (deltaX * scaleX)
+            ));
+            const newY = Math.max(0, Math.min(
+                croppedCanvas.height - cropCoordinates.height, 
+                cropCoordinates.y + (deltaY * scaleY)
+            ));
+            
+            // Actualizar posición visual
+            cropBox.style.left = (newX / scaleX) + 'px';
+            cropBox.style.top = (newY / scaleY) + 'px';
             
             // Actualizar coordenadas
             cropCoordinates.x = newX;
@@ -391,6 +446,7 @@
             hideElement(cropContainer);
             hideElement(cropPhotoBtn);
             showElement(resultArea);
+            showElement(emailSelector);
             
             showStatus('✅ ¡Imagen recortada! Lista para descargar o enviar.');
         });
@@ -433,19 +489,33 @@
             showStatus(`🔄 Imagen rotada ${rotation} grados`);
         });
 
-        // Evento: Enviar por correo
+        // Evento: Enviar por correo (MEJORADO)
         emailLink.addEventListener('click', (e) => {
             e.preventDefault();
             
-            const dataURL = resultCanvas.toDataURL('image/jpeg', 0.8);
+            const selectedEmail = emailSelect.value;
             const fecha = new Date().toLocaleDateString('es-MX');
-            const subject = `Identificación Cliente SEARS - ${fecha}`;
-            const body = `Estimado equipo,%0D%0A%0D%0AAdjunto la identificación del cliente procesada.%0D%0A%0D%0AFecha: ${fecha}%0D%0A%0D%0ASaludos cordiales.`;
+            const hora = new Date().toLocaleTimeString('es-MX');
             
-            const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
+            // Convertir canvas a data URL
+            const dataURL = resultCanvas.toDataURL('image/jpeg', 0.8);
+            
+            // Crear asunto y cuerpo del correo
+            const subject = `Identificación Cliente SEARS - ${fecha}`;
+            const body = `Estimado equipo,%0D%0A%0D%0AAdjunto la identificación del cliente procesada mediante la ID Camera App.%0D%0A%0D%0AFecha: ${fecha}%0D%0AHora: ${hora}%0D%0A%0D%0APara cualquier aclaración, quedo a sus órdenes.%0D%0A%0D%0ASaludos cordiales.`;
+            
+            // Crear enlace de correo
+            const mailtoLink = `mailto:${selectedEmail}?subject=${encodeURIComponent(subject)}&body=${body}`;
+            
+            // Abrir cliente de correo
             window.location.href = mailtoLink;
             
-            showStatus('✉️ Abriendo cliente de correo...');
+            showStatus(`✉️ Abriendo correo para: ${selectedEmail}`);
+            
+            // Instrucciones para el usuario
+            setTimeout(() => {
+                showStatus('💡 Consejo: Descarga la imagen primero y luego adjúntala manualmente en el correo');
+            }, 2000);
         });
 
         // Evento: Reiniciar la aplicación
@@ -465,6 +535,7 @@
             hideElement(cropPhotoBtn);
             hideElement(resultArea);
             hideElement(permissionInstructions);
+            hideElement(emailSelector);
             
             // Mostrar solo el botón de inicio
             showElement(startCameraBtn);
@@ -482,6 +553,22 @@
             console.error('Error global:', e);
             showStatus('❌ Ocurrió un error inesperado');
         });
+
+        // Prevenir zoom en inputs en iOS
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
     </script>
 </body>
 </html>
