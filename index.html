@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escaner de Credenciales</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -89,6 +91,8 @@
             justify-content: center;
             background-color: #f9f9f9;
             transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
         }
 
         .preview-box.filled {
@@ -113,6 +117,28 @@
             font-size: 24px;
             color: #999;
             margin-bottom: 5px;
+        }
+
+        .preview-controls {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .preview-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 3px;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
         }
 
         .controls {
@@ -208,12 +234,34 @@
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 20px;
+            position: relative;
         }
 
         #camera-feed {
             width: 100%;
             height: auto;
             display: block;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .crop-guide {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 280px;
+            height: 180px;
+            border: 3px solid #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
         }
 
         .camera-controls {
@@ -314,6 +362,11 @@
             .btn {
                 width: 100%;
             }
+            
+            .crop-guide {
+                width: 240px;
+                height: 150px;
+            }
         }
     </style>
 </head>
@@ -329,8 +382,9 @@
             <ul>
                 <li>Haz clic en "Escanear Frente" para capturar el lado frontal de tu credencial</li>
                 <li>Haz clic en "Escanear Reverso" para capturar el lado posterior</li>
-                <li>Una vez que tengas ambas imágenes, haz clic en "Generar Archivo"</li>
-                <li>Finalmente, puedes "Descargar" el archivo o "Enviar por Correo"</li>
+                <li>Puedes rotar las imágenes después de capturarlas si es necesario</li>
+                <li>Una vez que tengas ambas imágenes, haz clic en "Generar PDF"</li>
+                <li>Finalmente, puedes "Descargar" el PDF o "Enviar por Correo"</li>
             </ul>
         </div>
 
@@ -343,11 +397,17 @@
                     <div class="preview-icon">🆔</div>
                     <div class="preview-text">Frente</div>
                     <img class="preview-image" id="front-image" alt="Frente de credencial">
+                    <div class="preview-controls">
+                        <button class="preview-btn" id="rotate-front" title="Rotar imagen">↻</button>
+                    </div>
                 </div>
                 <div class="preview-box" id="back-preview">
                     <div class="preview-icon">🆔</div>
                     <div class="preview-text">Reverso</div>
                     <img class="preview-image" id="back-image" alt="Reverso de credencial">
+                    <div class="preview-controls">
+                        <button class="preview-btn" id="rotate-back" title="Rotar imagen">↻</button>
+                    </div>
                 </div>
             </div>
             <div id="status" class="status status-info">
@@ -362,8 +422,8 @@
             <button class="btn btn-scan" id="scan-back">
                 <i>📷</i> Escanear Reverso
             </button>
-            <button class="btn btn-generate" id="generate-file" disabled>
-                <i>📦</i> Generar Archivo
+            <button class="btn btn-generate" id="generate-pdf" disabled>
+                <i>📄</i> Generar PDF
             </button>
             <button class="btn btn-download" id="download" disabled>
                 <i>💾</i> Descargar
@@ -377,6 +437,9 @@
     <div class="camera-container" id="camera-container">
         <div class="camera-view">
             <video id="camera-feed" autoplay playsinline></video>
+            <div class="camera-overlay">
+                <div class="crop-guide"></div>
+            </div>
         </div>
         <div class="camera-controls">
             <button class="btn-capture" id="capture">
@@ -392,13 +455,11 @@
         <p>Aplicación web para escanear credenciales - Funciona 100% en el navegador</p>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         // Elementos DOM
         const scanFrontBtn = document.getElementById('scan-front');
         const scanBackBtn = document.getElementById('scan-back');
-        const generateFileBtn = document.getElementById('generate-file');
+        const generatePdfBtn = document.getElementById('generate-pdf');
         const downloadBtn = document.getElementById('download');
         const sendEmailBtn = document.getElementById('send-email');
         const cameraContainer = document.getElementById('camera-container');
@@ -409,6 +470,8 @@
         const backPreview = document.getElementById('back-preview');
         const frontImage = document.getElementById('front-image');
         const backImage = document.getElementById('back-image');
+        const rotateFrontBtn = document.getElementById('rotate-front');
+        const rotateBackBtn = document.getElementById('rotate-back');
         const statusDiv = document.getElementById('status');
 
         // Variables de estado
@@ -416,18 +479,22 @@
         let currentSide = null;
         let frontImageData = null;
         let backImageData = null;
-        let zipFile = null;
+        let frontRotation = 0;
+        let backRotation = 0;
+        let pdfFile = null;
 
         // Inicialización
         function init() {
             // Event listeners
             scanFrontBtn.addEventListener('click', () => openCamera('front'));
             scanBackBtn.addEventListener('click', () => openCamera('back'));
-            generateFileBtn.addEventListener('click', generateZipFile);
-            downloadBtn.addEventListener('click', downloadZipFile);
+            generatePdfBtn.addEventListener('click', generatePDF);
+            downloadBtn.addEventListener('click', downloadPDF);
             sendEmailBtn.addEventListener('click', sendEmail);
             captureBtn.addEventListener('click', captureImage);
             cancelCameraBtn.addEventListener('click', closeCamera);
+            rotateFrontBtn.addEventListener('click', () => rotateImage('front'));
+            rotateBackBtn.addEventListener('click', () => rotateImage('back'));
             
             updateUI();
         }
@@ -448,7 +515,7 @@
                 
                 cameraFeed.srcObject = stream;
                 cameraContainer.style.display = 'flex';
-                statusDiv.textContent = `Listo para capturar el ${side === 'front' ? 'FRENTE' : 'REVERSO'} de la credencial`;
+                statusDiv.textContent = `Encuadra el ${side === 'front' ? 'FRENTE' : 'REVERSO'} de la credencial dentro del marco verde`;
                 statusDiv.className = 'status status-info';
             } catch (error) {
                 console.error('Error al acceder a la cámara:', error);
@@ -489,6 +556,7 @@
                 frontImage.style.display = 'block';
                 frontPreview.classList.add('filled');
                 frontPreview.querySelector('.preview-icon').style.display = 'none';
+                frontRotation = 0;
                 statusDiv.textContent = 'Frente de la credencial capturado correctamente';
             } else {
                 backImageData = imageData;
@@ -496,6 +564,7 @@
                 backImage.style.display = 'block';
                 backPreview.classList.add('filled');
                 backPreview.querySelector('.preview-icon').style.display = 'none';
+                backRotation = 0;
                 statusDiv.textContent = 'Reverso de la credencial capturado correctamente';
             }
             
@@ -504,110 +573,130 @@
             updateUI();
         }
 
-        // Generar archivo ZIP
-        function generateZipFile() {
+        // Rotar imagen
+        function rotateImage(side) {
+            if (side === 'front' && frontImageData) {
+                frontRotation = (frontRotation + 90) % 360;
+                applyRotation(frontImage, frontRotation);
+            } else if (side === 'back' && backImageData) {
+                backRotation = (backRotation + 90) % 360;
+                applyRotation(backImage, backRotation);
+            }
+        }
+
+        // Aplicar rotación a una imagen
+        function applyRotation(imgElement, rotation) {
+            imgElement.style.transform = `rotate(${rotation}deg)`;
+        }
+
+        // Generar PDF
+        function generatePDF() {
             if (!frontImageData || !backImageData) {
                 statusDiv.textContent = 'Error: Debes capturar ambas caras de la credencial primero';
                 statusDiv.className = 'status status-error';
                 return;
             }
             
-            statusDiv.textContent = 'Generando archivo ZIP...';
+            statusDiv.textContent = 'Generando PDF...';
             statusDiv.className = 'status status-info';
             
-            // Crear instancia de JSZip
-            const zip = new JSZip();
+            // Usar jsPDF para crear el PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
             
-            // Convertir data URLs a blobs
-            const frontBlob = dataURLToBlob(frontImageData);
-            const backBlob = dataURLToBlob(backImageData);
+            // Título
+            doc.setFontSize(20);
+            doc.text('Credencial Escaneada', 105, 15, { align: 'center' });
             
-            // Agregar imágenes al ZIP
-            zip.file("frente_credencial.jpg", frontBlob);
-            zip.file("reverso_credencial.jpg", backBlob);
+            // Fecha
+            const now = new Date();
+            doc.setFontSize(10);
+            doc.text(`Escaneado el: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 105, 22, { align: 'center' });
             
-            // Generar el ZIP
-            zip.generateAsync({type:"blob"})
-            .then(function(content) {
-                zipFile = content;
-                statusDiv.textContent = 'Archivo ZIP generado correctamente. Ahora puedes descargarlo o enviarlo por correo.';
-                statusDiv.className = 'status status-success';
-                downloadBtn.disabled = false;
-                sendEmailBtn.disabled = false;
-            })
-            .catch(function(error) {
-                console.error('Error al generar ZIP:', error);
-                statusDiv.textContent = 'Error al generar el archivo ZIP';
-                statusDiv.className = 'status status-error';
-            });
+            // Agregar frente de la credencial
+            doc.addImage(frontImageData, 'JPEG', 20, 30, 80, 60);
+            doc.setFontSize(12);
+            doc.text('Frente', 60, 95, { align: 'center' });
+            
+            // Agregar reverso de la credencial
+            doc.addImage(backImageData, 'JPEG', 110, 30, 80, 60);
+            doc.text('Reverso', 150, 95, { align: 'center' });
+            
+            // Pie de página
+            doc.setFontSize(8);
+            doc.text('Documento generado por Escáner de Credenciales', 105, 120, { align: 'center' });
+            
+            // Generar el PDF como blob
+            const pdfBlob = doc.output('blob');
+            pdfFile = pdfBlob;
+            
+            statusDiv.textContent = 'PDF generado correctamente. Ahora puedes descargarlo o enviarlo por correo.';
+            statusDiv.className = 'status status-success';
+            downloadBtn.disabled = false;
+            sendEmailBtn.disabled = false;
         }
 
-        // Descargar archivo ZIP
-        function downloadZipFile() {
-            if (!zipFile) {
-                statusDiv.textContent = 'Error: Primero debes generar el archivo';
+        // Descargar PDF
+        function downloadPDF() {
+            if (!pdfFile) {
+                statusDiv.textContent = 'Error: Primero debes generar el PDF';
                 statusDiv.className = 'status status-error';
                 return;
             }
             
-            // Usar FileSaver.js para descargar el archivo
-            saveAs(zipFile, "credencial_escaneada.zip");
-            statusDiv.textContent = 'Archivo descargado correctamente';
+            // Crear un enlace de descarga
+            const url = URL.createObjectURL(pdfFile);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'credencial_escaneada.pdf';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            statusDiv.textContent = 'PDF descargado correctamente';
             statusDiv.className = 'status status-success';
         }
 
         // Enviar por correo
         function sendEmail() {
-            if (!zipFile) {
-                statusDiv.textContent = 'Error: Primero debes generar el archivo';
+            if (!pdfFile) {
+                statusDiv.textContent = 'Error: Primero debes generar el PDF';
                 statusDiv.className = 'status status-error';
                 return;
             }
             
             // Convertir el blob a un objeto File
-            const file = new File([zipFile], "credencial_escaneada.zip", { type: "application/zip" });
+            const file = new File([pdfFile], "credencial_escaneada.pdf", { type: "application/pdf" });
             
             // Crear un objeto URL para el archivo
             const fileURL = URL.createObjectURL(file);
             
-            // Crear un enlace de correo con el archivo adjunto
+            // Crear un enlace de correo
             const subject = "Credencial Escaneada";
-            const body = "Adjunto encontrarás las imágenes escaneadas de mi credencial.";
+            const body = "Adjunto encontrarás el PDF con las imágenes escaneadas de mi credencial.";
             const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             
-            // Crear un enlace temporal para descargar el archivo
-            // Nota: No podemos adjuntar directamente el archivo al correo desde el navegador
-            // En su lugar, informamos al usuario
-            statusDiv.textContent = 'Para enviar por correo: 1) Descarga el archivo ZIP 2) Ábrelo en tu cliente de correo 3) Adjunta el archivo descargado';
+            // Informar al usuario
+            statusDiv.textContent = 'Para enviar por correo: 1) Descarga el PDF 2) Ábrelo en tu cliente de correo 3) Adjunta el archivo descargado';
             statusDiv.className = 'status status-info';
             
-            // Alternativa: Abrir cliente de correo con instrucciones
+            // Abrir cliente de correo
             window.location.href = mailtoLink;
-        }
-
-        // Convertir data URL a Blob
-        function dataURLToBlob(dataURL) {
-            const parts = dataURL.split(';base64,');
-            const contentType = parts[0].split(':')[1];
-            const raw = window.atob(parts[1]);
-            const rawLength = raw.length;
-            const uInt8Array = new Uint8Array(rawLength);
-            
-            for (let i = 0; i < rawLength; ++i) {
-                uInt8Array[i] = raw.charCodeAt(i);
-            }
-            
-            return new Blob([uInt8Array], { type: contentType });
         }
 
         // Actualizar interfaz de usuario
         function updateUI() {
             // Habilitar/deshabilitar botones según el estado
-            generateFileBtn.disabled = !(frontImageData && backImageData);
+            generatePdfBtn.disabled = !(frontImageData && backImageData);
+            
+            // Mostrar/ocultar controles de rotación
+            rotateFrontBtn.style.display = frontImageData ? 'flex' : 'none';
+            rotateBackBtn.style.display = backImageData ? 'flex' : 'none';
             
             // Actualizar texto de estado si es necesario
-            if (frontImageData && backImageData && !zipFile) {
-                statusDiv.textContent = 'Ambas caras de la credencial capturadas. Presiona "Generar Archivo" para continuar.';
+            if (frontImageData && backImageData && !pdfFile) {
+                statusDiv.textContent = 'Ambas caras de la credencial capturadas. Presiona "Generar PDF" para continuar.';
                 statusDiv.className = 'status status-info';
             }
         }
