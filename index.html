@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ID Camera App - SEARS</title>
-    <!-- Incluye Tailwind CSS para un estilo rápido y responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +14,14 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
-        #camera-feed, #cropped-canvas {
+        #camera-feed {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            display: none;
+        }
+        #cropped-canvas {
             max-width: 100%;
             height: auto;
             border-radius: 0.75rem;
@@ -32,6 +38,7 @@
         #crop-box {
             position: absolute;
             border: 2px dashed #FFF;
+            background-color: rgba(255, 255, 255, 0.2);
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
             cursor: move;
             display: none;
@@ -49,24 +56,15 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .button-disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .success-message {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
     </style>
 </head>
 <body class="bg-red-600 dark:bg-red-800 text-gray-800 dark:text-gray-200 p-4 min-h-screen flex flex-col items-center justify-center">
 
     <div class="relative max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 space-y-6 flex flex-col items-center">
         <!-- Logo en la esquina superior izquierda -->
-        <img src="https://placehold.co/60x60/ffffff/000000?text=SEARS" alt="Logo de Sears" class="absolute top-4 left-4 rounded-full shadow-md">
+        <div class="absolute top-4 left-4 w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+            SEARS
+        </div>
 
         <!-- Título de la aplicación -->
         <h1 class="text-3xl font-bold text-center text-gray-900 dark:text-white mt-8">ID Camera App</h1>
@@ -80,63 +78,65 @@
         <div id="app-container" class="w-full flex flex-col items-center space-y-4">
 
             <!-- Mensajes de estado -->
-            <div id="status-message" class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-opacity duration-300">
+            <div id="status-message" class="text-sm font-medium text-gray-600 dark:text-gray-300 transition-opacity duration-300 text-center">
                 Pulsa "Abrir cámara" para empezar.
             </div>
             
             <!-- Contenedor para instrucciones de permiso -->
             <div id="permission-instructions" class="w-full bg-red-100 dark:bg-red-800 p-4 rounded-lg text-red-700 dark:text-red-200 hidden">
                 <h3 class="font-bold text-lg mb-2">Permiso de cámara denegado</h3>
-                <p class="mb-2">Por favor, habilita el acceso a la cámara en la configuración de tu navegador. Sigue estos pasos:</p>
+                <p class="mb-2">Para usar esta aplicación, necesitas permitir el acceso a la cámara:</p>
                 <ul class="list-disc list-inside space-y-1 text-sm">
-                    <li><strong>Chrome (Android):</strong> Toca los tres puntos > Configuración > Configuración de sitios > Cámara.</li>
-                    <li><strong>Safari (iPhone/iPad):</strong> Ve a Ajustes > Safari > Cámara.</li>
+                    <li><strong>Chrome/Edge:</strong> Haz clic en el icono de cámara bloqueada en la barra de direcciones</li>
+                    <li><strong>Firefox:</strong> Ve a Configuración > Privacidad y Seguridad > Permisos de la cámara</li>
+                    <li><strong>Safari:</strong> Preferencias > Sitios web > Cámara</li>
                 </ul>
-                <p class="mt-2 text-xs text-red-600 dark:text-red-300">Una vez que hayas habilitado el permiso, vuelve a la aplicación y pulsa "Volver a empezar".</p>
             </div>
 
-            <!-- Feed de la cámara y canvas para la foto -->
+            <!-- Feed de la cámara -->
             <div id="camera-view" class="w-full flex justify-center">
                 <video id="camera-feed" class="rounded-lg shadow-md" autoplay playsinline></video>
-                <canvas id="photo-canvas" class="hidden"></canvas>
             </div>
 
+            <!-- Canvas para la foto capturada -->
+            <canvas id="photo-canvas" class="hidden"></canvas>
+
             <!-- Contenedor para el recorte -->
-            <div id="crop-container" class="w-full flex justify-center mt-4">
+            <div id="crop-container" class="w-full flex justify-center mt-4 relative">
                 <canvas id="cropped-canvas" class="rounded-lg shadow-md"></canvas>
                 <div id="crop-box"></div>
             </div>
 
             <!-- Botones de acción -->
             <div id="button-container" class="w-full flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-4 mt-4">
-                <button id="start-camera" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
-                    Abrir cámara
+                <button id="start-camera" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+                    📷 Abrir cámara
                 </button>
-                <button id="take-photo" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
-                    Tomar foto
+                <button id="take-photo" class="w-full md:w-auto bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
+                    📸 Tomar foto
                 </button>
-                <button id="crop-photo" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
-                    Recortar
+                <button id="crop-photo" class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md hidden">
+                    ✂️ Recortar
                 </button>
             </div>
 
             <!-- Área de resultados -->
             <div id="result-area" class="w-full flex flex-col items-center space-y-4 mt-4 hidden">
-                <p class="text-center text-gray-600 dark:text-gray-400">Imagen recortada:</p>
-                <canvas id="result-canvas" class="rounded-lg shadow-md max-w-full h-auto border border-gray-300 dark:border-gray-700"></canvas>
+                <p class="text-center text-gray-600 dark:text-gray-400 font-medium">Imagen recortada:</p>
+                <canvas id="result-canvas" class="rounded-lg shadow-md max-w-full h-auto border-2 border-gray-300 dark:border-gray-700"></canvas>
                 <div class="w-full flex flex-col md:flex-row justify-center space-y-2 md:space-y-0 md:space-x-4">
-                    <button id="download-btn" class="w-full md:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
-                        Descargar imagen
+                    <button id="download-btn" class="w-full md:w-auto bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+                        💾 Descargar
                     </button>
-                    <button id="rotate-btn" class="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
-                        Rotar 90°
+                    <button id="rotate-btn" class="w-full md:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+                        🔄 Rotar 90°
                     </button>
-                    <button id="email-link" class="w-full md:w-auto bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md text-center">
-                        Enviar por correo
+                    <button id="email-link" class="w-full md:w-auto bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md">
+                    ✉️ Enviar correo
                     </button>
                 </div>
-                <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mt-2">
-                    Volver a empezar
+                <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 mt-4 font-medium">
+                    🔁 Volver a empezar
                 </button>
             </div>
         </div>
@@ -161,11 +161,12 @@
         const cropContainer = document.getElementById('crop-container');
         const permissionInstructions = document.getElementById('permission-instructions');
 
-        let stream; // Variable para la transmisión de la cámara
-        let originalImage; // Almacena la imagen original para el recorte
+        let stream = null;
+        let originalImage = null;
         let isCropping = false;
-        let startX, startY;
+        let startX, startY, endX, endY;
         let rotation = 0;
+        let cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
 
         // Función para mostrar mensajes de estado
         function showStatus(message) {
@@ -173,21 +174,246 @@
         }
 
         // Función para cambiar la visibilidad de los elementos
-        function showElement(el) { el.classList.remove('hidden'); }
-        function hideElement(el) { el.classList.add('hidden'); }
-
-        // Función para comprimir imagen
-        function compressImage(canvas, quality = 0.8) {
-            return canvas.toDataURL('image/jpeg', quality);
+        function showElement(el) { 
+            el.classList.remove('hidden'); 
+            el.style.display = 'block';
+        }
+        function hideElement(el) { 
+            el.classList.add('hidden'); 
+            el.style.display = 'none';
         }
 
-        // Función para rotar imagen
-        function rotateImage(degrees) {
-            const ctx = resultCanvas.getContext('2d');
+        // Evento: Iniciar la cámara
+        startCameraBtn.addEventListener('click', async () => {
+            showStatus('🔄 Accediendo a la cámara...');
+            hideElement(permissionInstructions);
+            
+            try {
+                // Intentar con la cámara trasera primero
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                };
+                
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                
+                cameraFeed.srcObject = stream;
+                showElement(cameraFeed);
+                hideElement(startCameraBtn);
+                showElement(takePhotoBtn);
+                showStatus('✅ Cámara lista. Apunta la identificación y pulsa "Tomar foto"');
+                
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                
+                if (error.name === 'NotAllowedError') {
+                    showStatus('❌ Permiso de cámara denegado');
+                    showElement(permissionInstructions);
+                } else if (error.name === 'NotFoundError') {
+                    showStatus('❌ No se encontró ninguna cámara');
+                } else {
+                    showStatus('❌ Error al acceder a la cámara');
+                }
+                
+                showElement(startCameraBtn);
+            }
+        });
+
+        // Evento: Tomar la foto
+        takePhotoBtn.addEventListener('click', () => {
+            if (!stream) {
+                showStatus('❌ Error: No hay transmisión de cámara');
+                return;
+            }
+
+            showStatus('📸 Procesando foto...');
+            
+            // Configurar el canvas con las dimensiones del video
+            const videoWidth = cameraFeed.videoWidth;
+            const videoHeight = cameraFeed.videoHeight;
+            
+            photoCanvas.width = videoWidth;
+            photoCanvas.height = videoHeight;
+            croppedCanvas.width = videoWidth;
+            croppedCanvas.height = videoHeight;
+            
+            // Dibujar el frame actual del video en el canvas
+            const context = photoCanvas.getContext('2d');
+            context.drawImage(cameraFeed, 0, 0, videoWidth, videoHeight);
+            
+            // Detener la cámara
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+            
+            // Ocultar elementos de cámara y mostrar área de recorte
+            hideElement(cameraFeed);
+            hideElement(takePhotoBtn);
+            showElement(cropContainer);
+            showElement(croppedCanvas);
+            
+            // Dibujar la imagen en el canvas de recorte
+            const cropContext = croppedCanvas.getContext('2d');
+            cropContext.drawImage(photoCanvas, 0, 0);
+            
+            // Inicializar el cuadro de recorte
+            initializeCropBox();
+            
+            showStatus('⬅️➡️ Arrastra para seleccionar el área de la identificación');
+            showElement(cropPhotoBtn);
+        });
+
+        // Inicializar el cuadro de recorte
+        function initializeCropBox() {
+            const canvas = croppedCanvas;
+            const rect = canvas.getBoundingClientRect();
+            
+            // Tamaño inicial del cuadro de recorte (80% del canvas)
+            const boxWidth = canvas.width * 0.8;
+            const boxHeight = canvas.height * 0.6;
+            const boxX = (canvas.width - boxWidth) / 2;
+            const boxY = (canvas.height - boxHeight) / 2;
+            
+            // Configurar el cuadro de recorte
+            cropBox.style.position = 'absolute';
+            cropBox.style.border = '2px dashed #00ff00';
+            cropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            cropBox.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)';
+            cropBox.style.cursor = 'move';
+            
+            // Posicionar el cuadro
+            cropBox.style.left = boxX + 'px';
+            cropBox.style.top = boxY + 'px';
+            cropBox.style.width = boxWidth + 'px';
+            cropBox.style.height = boxHeight + 'px';
+            
+            showElement(cropBox);
+            
+            // Guardar coordenadas iniciales
+            cropCoordinates = {
+                x: boxX,
+                y: boxY,
+                width: boxWidth,
+                height: boxHeight
+            };
+        }
+
+        // Eventos para arrastrar el cuadro de recorte
+        cropBox.addEventListener('mousedown', startDragging);
+        cropBox.addEventListener('touchstart', startDragging);
+
+        function startDragging(e) {
+            e.preventDefault();
+            isCropping = true;
+            
+            const rect = croppedCanvas.getBoundingClientRect();
+            if (e.type === 'mousedown') {
+                startX = e.clientX - rect.left;
+                startY = e.clientY - rect.top;
+            } else {
+                startX = e.touches[0].clientX - rect.left;
+                startY = e.touches[0].clientY - rect.top;
+            }
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDragging);
+            document.addEventListener('touchend', stopDragging);
+        }
+
+        function drag(e) {
+            if (!isCropping) return;
+            e.preventDefault();
+            
+            const rect = croppedCanvas.getBoundingClientRect();
+            let currentX, currentY;
+            
+            if (e.type === 'mousemove') {
+                currentX = e.clientX - rect.left;
+                currentY = e.clientY - rect.top;
+            } else {
+                currentX = e.touches[0].clientX - rect.left;
+                currentY = e.touches[0].clientY - rect.top;
+            }
+            
+            const deltaX = currentX - startX;
+            const deltaY = currentY - startY;
+            
+            // Calcular nueva posición manteniendo el cuadro dentro del canvas
+            const newX = Math.max(0, Math.min(croppedCanvas.width - cropCoordinates.width, cropCoordinates.x + deltaX));
+            const newY = Math.max(0, Math.min(croppedCanvas.height - cropCoordinates.height, cropCoordinates.y + deltaY));
+            
+            // Actualizar posición
+            cropBox.style.left = newX + 'px';
+            cropBox.style.top = newY + 'px';
+            
+            // Actualizar coordenadas
+            cropCoordinates.x = newX;
+            cropCoordinates.y = newY;
+            
+            startX = currentX;
+            startY = currentY;
+        }
+
+        function stopDragging() {
+            isCropping = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDragging);
+            document.removeEventListener('touchend', stopDragging);
+        }
+
+        // Evento: Recortar la imagen
+        cropPhotoBtn.addEventListener('click', () => {
+            if (!cropCoordinates.width || !cropCoordinates.height) {
+                showStatus('❌ Primero selecciona un área para recortar');
+                return;
+            }
+
+            showStatus('✂️ Recortando imagen...');
+            
+            // Configurar el canvas de resultado
+            resultCanvas.width = cropCoordinates.width;
+            resultCanvas.height = cropCoordinates.height;
+            
+            const resultContext = resultCanvas.getContext('2d');
+            
+            // Dibujar solo el área recortada
+            resultContext.drawImage(
+                photoCanvas,
+                cropCoordinates.x, cropCoordinates.y, cropCoordinates.width, cropCoordinates.height,
+                0, 0, cropCoordinates.width, cropCoordinates.height
+            );
+            
+            // Ocultar elementos de recorte y mostrar resultados
+            hideElement(cropContainer);
+            hideElement(cropPhotoBtn);
+            showElement(resultArea);
+            
+            showStatus('✅ ¡Imagen recortada! Lista para descargar o enviar.');
+        });
+
+        // Evento: Descargar imagen
+        downloadBtn.addEventListener('click', () => {
+            const dataURL = resultCanvas.toDataURL('image/jpeg', 0.9);
+            const link = document.createElement('a');
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
+            link.download = `identificacion-sears-${timestamp}.jpg`;
+            link.href = dataURL;
+            link.click();
+            showStatus('💾 Imagen descargada correctamente');
+        });
+
+        // Evento: Rotar imagen
+        rotateBtn.addEventListener('click', () => {
+            rotation = (rotation + 90) % 360;
+            
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
             
-            if (degrees === 90 || degrees === 270) {
+            if (rotation === 90 || rotation === 270) {
                 tempCanvas.width = resultCanvas.height;
                 tempCanvas.height = resultCanvas.width;
             } else {
@@ -197,239 +423,64 @@
             
             tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
             tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
-            tempCtx.rotate(degrees * Math.PI / 180);
+            tempCtx.rotate(rotation * Math.PI / 180);
             tempCtx.drawImage(resultCanvas, -resultCanvas.width / 2, -resultCanvas.height / 2);
             
             resultCanvas.width = tempCanvas.width;
             resultCanvas.height = tempCanvas.height;
-            ctx.drawImage(tempCanvas, 0, 0);
-        }
-
-        // Evento: Iniciar la cámara
-        startCameraBtn.addEventListener('click', async () => {
-            showStatus('Accediendo a la cámara...');
-            hideElement(permissionInstructions);
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'environment',
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    } 
-                });
-                cameraFeed.srcObject = stream;
-                showElement(cameraFeed);
-                hideElement(startCameraBtn);
-                showElement(takePhotoBtn);
-                showStatus('Cámara lista. Pulsa "Tomar foto"');
-            } catch (error) {
-                console.error('Error al acceder a la cámara:', error);
-                showStatus('Error al acceder a la cámara');
-                showElement(permissionInstructions);
-                showElement(startCameraBtn);
-                
-                // Mostrar instrucciones específicas según el error
-                if (error.name === 'NotAllowedError') {
-                    permissionInstructions.innerHTML = `
-                        <h3 class="font-bold text-lg mb-2">Permiso de cámara denegado</h3>
-                        <p class="mb-2">Para usar esta aplicación, necesitas permitir el acceso a la cámara:</p>
-                        <ul class="list-disc list-inside space-y-1 text-sm">
-                            <li><strong>Chrome/Edge:</strong> Haz clic en el icono de cámara bloqueada en la barra de direcciones</li>
-                            <li><strong>Firefox:</strong> Ve a Configuración > Privacidad y Seguridad > Permisos de la cámara</li>
-                            <li><strong>Safari:</strong> Preferencias > Sitios web > Cámara</li>
-                        </ul>
-                    `;
-                } else if (error.name === 'NotFoundError') {
-                    permissionInstructions.innerHTML = `
-                        <h3 class="font-bold text-lg mb-2">Cámara no encontrada</h3>
-                        <p>No se detectó ninguna cámara disponible en tu dispositivo.</p>
-                    `;
-                }
-            }
-        });
-
-        // Evento: Tomar la foto
-        takePhotoBtn.addEventListener('click', () => {
-            // Detener la transmisión de la cámara
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-
-            // Ocultar la cámara y mostrar el canvas de recorte
-            hideElement(cameraFeed);
-            hideElement(takePhotoBtn);
-            showElement(cropContainer);
-            showElement(croppedCanvas);
-
-            // Redimensionar el canvas para que coincida con el video y dibujar la imagen
-            photoCanvas.width = cameraFeed.videoWidth;
-            photoCanvas.height = cameraFeed.videoHeight;
-            const photoContext = photoCanvas.getContext('2d');
-            photoContext.drawImage(cameraFeed, 0, 0, photoCanvas.width, photoCanvas.height);
-
-            // Almacenar la imagen original y prepararla para el recorte
-            originalImage = new Image();
-            originalImage.src = photoCanvas.toDataURL('image/png');
-            originalImage.onload = () => {
-                // Configurar el canvas para el recorte
-                croppedCanvas.width = originalImage.width;
-                croppedCanvas.height = originalImage.height;
-                const croppedContext = croppedCanvas.getContext('2d');
-                croppedContext.drawImage(originalImage, 0, 0);
-
-                showStatus('Arrastra para seleccionar el área de recorte.');
-                showElement(cropPhotoBtn);
-                showElement(cropBox);
-            };
-        });
-
-        // Lógica para arrastrar y soltar el recuadro de recorte
-        croppedCanvas.addEventListener('mousedown', (e) => {
-            isCropping = true;
-            const rect = croppedCanvas.getBoundingClientRect();
-            startX = e.clientX - rect.left;
-            startY = e.clientY - rect.top;
-            cropBox.style.left = `${startX}px`;
-            cropBox.style.top = `${startY}px`;
-            cropBox.style.width = '0px';
-            cropBox.style.height = '0px';
-        });
-
-        croppedCanvas.addEventListener('mousemove', (e) => {
-            if (!isCropping) return;
-            const rect = croppedCanvas.getBoundingClientRect();
-            const currentX = e.clientX - rect.left;
-            const currentY = e.clientY - rect.top;
-            const width = currentX - startX;
-            const height = currentY - startY;
-            cropBox.style.width = `${Math.abs(width)}px`;
-            cropBox.style.height = `${Math.abs(height)}px`;
-            cropBox.style.left = `${Math.min(startX, currentX)}px`;
-            cropBox.style.top = `${Math.min(startY, currentY)}px`;
-        });
-
-        croppedCanvas.addEventListener('mouseup', () => {
-            isCropping = false;
-        });
-
-        // Evento: Recortar la imagen
-        cropPhotoBtn.addEventListener('click', () => {
-            const cropRect = cropBox.getBoundingClientRect();
-            const canvasRect = croppedCanvas.getBoundingClientRect();
-
-            // Calcular las coordenadas de recorte en el canvas original
-            const scaleX = croppedCanvas.width / canvasRect.width;
-            const scaleY = croppedCanvas.height / canvasRect.height;
-
-            const cropX = (cropRect.left - canvasRect.left) * scaleX;
-            const cropY = (cropRect.top - canvasRect.top) * scaleY;
-            const cropWidth = cropRect.width * scaleX;
-            const cropHeight = cropRect.height * scaleY;
-
-            // Dibujar la imagen recortada en el canvas de resultados
-            resultCanvas.width = cropWidth;
-            resultCanvas.height = cropHeight;
-            const resultContext = resultCanvas.getContext('2d');
-            resultContext.drawImage(originalImage, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-
-            // Ocultar elementos de recorte y mostrar el área de resultados
-            hideElement(cropContainer);
-            hideElement(croppedCanvas);
-            hideElement(cropPhotoBtn);
-            showElement(resultArea);
-            showStatus('¡Imagen recortada! Lista para descargar o enviar.');
-
-            // Reiniciar rotación
-            rotation = 0;
-        });
-
-        // Evento: Descargar imagen
-        downloadBtn.addEventListener('click', () => {
-            const compressedDataURL = compressImage(resultCanvas, 0.8);
-            const link = document.createElement('a');
-            link.download = `ID-SEARS-${new Date().toISOString().slice(0,10)}.jpg`;
-            link.href = compressedDataURL;
-            link.click();
-            showStatus('Imagen descargada correctamente.');
-        });
-
-        // Evento: Rotar imagen
-        rotateBtn.addEventListener('click', () => {
-            rotation = (rotation + 90) % 360;
-            rotateImage(rotation);
-            showStatus(`Imagen rotada ${rotation} grados.`);
+            resultCanvas.getContext('2d').drawImage(tempCanvas, 0, 0);
+            
+            showStatus(`🔄 Imagen rotada ${rotation} grados`);
         });
 
         // Evento: Enviar por correo
         emailLink.addEventListener('click', (e) => {
             e.preventDefault();
             
-            const compressedDataURL = compressImage(resultCanvas, 0.8);
+            const dataURL = resultCanvas.toDataURL('image/jpeg', 0.8);
             const fecha = new Date().toLocaleDateString('es-MX');
             const subject = `Identificación Cliente SEARS - ${fecha}`;
-            const body = `Estimado equipo,%0D%0A%0D%0AAdjunto la identificación del cliente procesada mediante la ID Camera App.%0D%0A%0D%0AFecha: ${fecha}%0D%0A%0D%0ASaludos cordiales.`;
+            const body = `Estimado equipo,%0D%0A%0D%0AAdjunto la identificación del cliente procesada.%0D%0A%0D%0AFecha: ${fecha}%0D%0A%0D%0ASaludos cordiales.`;
             
-            // Crear enlace de correo
             const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${body}`;
             window.location.href = mailtoLink;
             
-            // Mensaje informativo
-            showStatus('Se abrirá tu cliente de correo. Deberás adjuntar la imagen manualmente descargándola primero.');
+            showStatus('✉️ Abriendo cliente de correo...');
         });
 
         // Evento: Reiniciar la aplicación
         restartBtn.addEventListener('click', () => {
-            // Ocultar todo y mostrar solo el botón de inicio
+            // Limpiar todo
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            // Ocultar todos los elementos
             hideElement(cameraFeed);
             hideElement(takePhotoBtn);
             hideElement(cropContainer);
             hideElement(croppedCanvas);
+            hideElement(cropBox);
             hideElement(cropPhotoBtn);
             hideElement(resultArea);
             hideElement(permissionInstructions);
+            
+            // Mostrar solo el botón de inicio
             showElement(startCameraBtn);
-            showStatus('Pulsa "Abrir cámara" para empezar.');
             
             // Reiniciar variables
             rotation = 0;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            originalImage = null;
+            cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
+            
+            showStatus('🔄 Pulsa "Abrir cámara" para empezar.');
         });
 
-        // Manejo de la lógica para dispositivos táctiles
-        croppedCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = croppedCanvas.getBoundingClientRect();
-            startX = touch.clientX - rect.left;
-            startY = touch.clientY - rect.top;
-            isCropping = true;
-
-            // Inicializar el cuadro de recorte
-            cropBox.style.left = `${startX}px`;
-            cropBox.style.top = `${startY}px`;
-            cropBox.style.width = '0px';
-            cropBox.style.height = '0px`;
-        });
-
-        croppedCanvas.addEventListener('touchmove', (e) => {
-            if (!isCropping) return;
-            e.preventDefault();
-            const touch = e.touches[0];
-            const rect = croppedCanvas.getBoundingClientRect();
-            const currentX = touch.clientX - rect.left;
-            const currentY = touch.clientY - rect.top;
-            const width = currentX - startX;
-            const height = currentY - startY;
-            cropBox.style.width = `${Math.abs(width)}px`;
-            cropBox.style.height = `${Math.abs(height)}px`;
-            cropBox.style.left = `${Math.min(startX, currentX)}px`;
-            cropBox.style.top = `${Math.min(startY, currentY)}px`;
-        });
-
-        croppedCanvas.addEventListener('touchend', () => {
-            isCropping = false;
+        // Manejo de errores globales
+        window.addEventListener('error', (e) => {
+            console.error('Error global:', e);
+            showStatus('❌ Ocurrió un error inesperado');
         });
     </script>
 </body>
