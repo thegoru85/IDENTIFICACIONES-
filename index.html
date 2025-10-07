@@ -81,6 +81,46 @@
             margin: 10px auto;
             background: rgba(220, 38, 38, 0.1);
         }
+        
+        /* NUEVOS ESTILOS PARA MEJORAR LA EXPERIENCIA */
+        #camera-container {
+            position: relative;
+            display: none;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+        }
+        #camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        #live-crop-box {
+            position: absolute;
+            border: 3px dashed #00ff00;
+            background-color: rgba(0, 255, 0, 0.1);
+            cursor: move;
+            pointer-events: none;
+        }
+        .side-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .side-front {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .side-back {
+            background-color: #ef4444;
+            color: white;
+        }
         @media print {
             body * {
                 visibility: hidden;
@@ -141,9 +181,12 @@
                 <div class="id-size-guide"></div>
             </div>
 
-            <!-- Feed de la cámara -->
-            <div id="camera-view" class="w-full flex justify-center">
+            <!-- Contenedor de cámara con overlay -->
+            <div id="camera-container" class="w-full flex justify-center">
                 <video id="camera-feed" class="rounded-lg shadow-md" autoplay playsinline></video>
+                <div id="camera-overlay">
+                    <div id="live-crop-box"></div>
+                </div>
             </div>
 
             <!-- Canvas para la foto capturada -->
@@ -161,7 +204,7 @@
                     📷 Abrir cámara
                 </button>
                 <button id="take-photo" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
-                    📸 Tomar foto
+                    📸 Tomar foto <span id="side-indicator" class="side-indicator side-front">FRONTAL</span>
                 </button>
                 <button id="crop-photo" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
                     ✂️ Recortar identificación
@@ -255,6 +298,9 @@
         const captureDate = document.getElementById('capture-date');
         const captureTime = document.getElementById('capture-time');
         const generationTime = document.getElementById('generation-time');
+        const cameraContainer = document.getElementById('camera-container');
+        const liveCropBox = document.getElementById('live-crop-box');
+        const sideIndicator = document.getElementById('side-indicator');
 
         let stream = null;
         let originalImage = null;
@@ -281,6 +327,55 @@
             el.classList.add('hidden'); 
         }
 
+        // Actualizar indicador de lado
+        function updateSideIndicator() {
+            if (currentSide === 'front') {
+                sideIndicator.textContent = 'FRONTAL';
+                sideIndicator.className = 'side-indicator side-front';
+            } else {
+                sideIndicator.textContent = 'REVERSO';
+                sideIndicator.className = 'side-indicator side-back';
+            }
+        }
+
+        // Configurar cuadro de recorte en vivo
+        function setupLiveCropBox() {
+            const videoWidth = cameraFeed.videoWidth;
+            const videoHeight = cameraFeed.videoHeight;
+            const rect = cameraFeed.getBoundingClientRect();
+            
+            // Tamaño más pequeño para identificación (proporción 2:3)
+            const boxHeight = Math.min(videoHeight * 0.5, 300); // Reducido de 0.6 a 0.5
+            const boxWidth = boxHeight * 0.66; // Proporción 2:3 para IDs
+            
+            // Calcular escala para posicionamiento correcto
+            const scaleX = videoWidth / rect.width;
+            const scaleY = videoHeight / rect.height;
+            
+            // Posicionar el cuadro en el centro
+            const boxX = (videoWidth - boxWidth) / 2;
+            const boxY = (videoHeight - boxHeight) / 2;
+            
+            // Configurar el cuadro de recorte en vivo
+            liveCropBox.style.position = 'absolute';
+            liveCropBox.style.border = '3px dashed #00ff00';
+            liveCropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+            liveCropBox.style.left = (boxX / scaleX) + 'px';
+            liveCropBox.style.top = (boxY / scaleY) + 'px';
+            liveCropBox.style.width = (boxWidth / scaleX) + 'px';
+            liveCropBox.style.height = (boxHeight / scaleY) + 'px';
+            
+            showElement(liveCropBox);
+            
+            // Guardar coordenadas para usar después
+            cropCoordinates = {
+                x: boxX,
+                y: boxY,
+                width: boxWidth,
+                height: boxHeight
+            };
+        }
+
         // Evento: Iniciar la cámara
         startCameraBtn.addEventListener('click', async () => {
             showStatus('🔄 Accediendo a la cámara...');
@@ -300,11 +395,17 @@
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 
                 cameraFeed.srcObject = stream;
+                showElement(cameraContainer);
                 showElement(cameraFeed);
                 showElement(sizeGuide);
                 hideElement(startCameraBtn);
                 showElement(takePhotoBtn);
-                showStatus('✅ Cámara lista. Enfoca la identificación FRONTAL dentro del marco rojo');
+                
+                // Esperar a que el video esté listo para configurar el cuadro
+                cameraFeed.onloadedmetadata = () => {
+                    setupLiveCropBox();
+                    showStatus('✅ Cámara lista. Enfoca la identificación dentro del marco verde');
+                };
                 
             } catch (error) {
                 console.error('Error al acceder a la cámara:', error);
@@ -347,7 +448,7 @@
             stream = null;
             
             // Ocultar elementos de cámara y mostrar área de recorte
-            hideElement(cameraFeed);
+            hideElement(cameraContainer);
             hideElement(sizeGuide);
             hideElement(takePhotoBtn);
             showElement(cropContainer);
@@ -357,23 +458,23 @@
             const cropContext = croppedCanvas.getContext('2d');
             cropContext.drawImage(photoCanvas, 0, 0);
             
-            // Inicializar el cuadro de recorte vertical
+            // Inicializar el cuadro de recorte usando las coordenadas del cuadro en vivo
             initializeCropBox();
             
-            showStatus('⬅️➡️ Ajusta el cuadro verde sobre la identificación');
+            showStatus('⬅️➡️ Ajusta el cuadro verde sobre la identificación si es necesario');
             showElement(cropPhotoBtn);
         });
 
-        // Inicializar el cuadro de recorte VERTICAL
+        // Inicializar el cuadro de recorte usando las coordenadas del cuadro en vivo
         function initializeCropBox() {
             const canvas = croppedCanvas;
             const rect = canvas.getBoundingClientRect();
             
-            // Tamaño vertical para identificación (proporción 2:3)
-            const boxHeight = Math.min(canvas.height * 0.6, 400);
-            const boxWidth = boxHeight * 0.66; // Proporción 2:3 para IDs
-            const boxX = (canvas.width - boxWidth) / 2;
-            const boxY = (canvas.height - boxHeight) / 2;
+            // Usar las coordenadas ya calculadas del cuadro en vivo
+            const boxWidth = cropCoordinates.width;
+            const boxHeight = cropCoordinates.height;
+            const boxX = cropCoordinates.x;
+            const boxY = cropCoordinates.y;
             
             // Configurar el cuadro de recorte
             cropBox.style.position = 'absolute';
@@ -393,13 +494,7 @@
             
             showElement(cropBox);
             
-            // Guardar coordenadas iniciales
-            cropCoordinates = {
-                x: boxX,
-                y: boxY,
-                width: boxWidth,
-                height: boxHeight
-            };
+            // Mantener las coordenadas ya establecidas
         }
 
         // Eventos para arrastrar el cuadro de recorte
@@ -508,29 +603,16 @@
             
             if (currentSide === 'front') {
                 showStatus('✅ ¡Frontal capturado! ¿Quieres capturar el REVERSO?');
+                currentSide = 'back';
+                updateSideIndicator();
                 takePhotoBtn.textContent = '📸 Capturar Reverso';
                 takePhotoBtn.classList.remove('hidden');
-                takePhotoBtn.onclick = captureBack;
+                showElement(startCameraBtn);
+                hideElement(resultArea);
             } else {
                 showStatus('✅ ¡Ambas caras capturadas! Genera el documento');
             }
         });
-
-        // Función para capturar el reverso
-        function captureBack() {
-            currentSide = 'back';
-            showStatus('🔄 Prepara la cámara para el REVERSO de la identificación');
-            
-            // Reiniciar la cámara
-            restartCamera();
-        }
-
-        // Reiniciar cámara para nueva captura
-        function restartCamera() {
-            hideElement(resultArea);
-            showElement(startCameraBtn);
-            showStatus('Pulsa "Abrir cámara" para capturar el reverso');
-        }
 
         // Evento: Generar documento
         generateDocBtn.addEventListener('click', () => {
@@ -607,6 +689,7 @@
             }
             
             // Ocultar todos los elementos
+            hideElement(cameraContainer);
             hideElement(cameraFeed);
             hideElement(takePhotoBtn);
             hideElement(cropContainer);
@@ -627,8 +710,8 @@
             cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
             capturedImages = { front: null, back: null };
             currentSide = 'front';
+            updateSideIndicator();
             takePhotoBtn.textContent = '📸 Tomar foto';
-            takePhotoBtn.onclick = null;
             
             showStatus('🔄 Pulsa "Abrir cámara" para empezar.');
         });
