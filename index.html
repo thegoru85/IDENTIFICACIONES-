@@ -1,832 +1,289 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ID Camera App - SEARS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        #camera-feed {
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: none;
-            transform: rotate(0deg);
-        }
-        #cropped-canvas {
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: none;
-            cursor: crosshair;
-        }
-        #crop-container {
-            position: relative;
-            display: none;
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-        }
-        #crop-box {
-            position: absolute;
-            border: 3px dashed #00ff00;
-            background-color: rgba(0, 255, 0, 0.1);
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
-            cursor: move;
-            display: none;
-            pointer-events: auto;
-        }
-        #result-canvas {
-            width: 100%;
-            max-width: 250px;
-            height: auto;
-            border-radius: 0.5rem;
-            border: 2px solid #e5e7eb;
-        }
-        #final-document {
-            width: 100%;
-            max-width: 800px;
-            min-height: 1056px;
-            background: white;
-            margin: 20px auto;
-            padding: 40px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            display: none;
-        }
-        .btn-mobile {
-            padding: 12px 20px;
-            font-size: 16px;
-            min-height: 50px;
-        }
-        .container-mobile {
-            max-width: 95%;
-            margin: 10px auto;
-        }
-        .id-size-guide {
-            width: 85.6mm;
-            height: 53.98mm;
-            border: 2px dashed #dc2626;
-            margin: 10px auto;
-            background: rgba(220, 38, 38, 0.1);
-        }
-        
-        /* NUEVOS ESTILOS PARA MEJORAR LA EXPERIENCIA */
-        #camera-container {
-            position: relative;
-            display: none;
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-        #camera-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-        #live-crop-box {
-            position: absolute;
-            border: 3px dashed #00ff00;
-            background-color: rgba(0, 255, 0, 0.1);
-            cursor: move;
-            pointer-events: none;
-        }
-        .side-indicator {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-weight: bold;
-            margin-left: 8px;
-        }
-        .side-front {
-            background-color: #3b82f6;
-            color: white;
-        }
-        .side-back {
-            background-color: #ef4444;
-            color: white;
-        }
-        #preview-image {
-            width: 100%;
-            max-width: 300px;
-            height: auto;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            display: none;
-        }
-        #email-container {
-            display: none;
-            width: 100%;
-            margin-top: 15px;
-            padding: 15px;
-            background-color: #f9fafb;
-            border-radius: 0.75rem;
-            border: 1px solid #e5e7eb;
-        }
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #final-document, #final-document * {
-                visibility: visible;
-            }
-            #final-document {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                max-width: 100%;
-                box-shadow: none;
-                margin: 0;
-                padding: 20px;
-            }
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ID Camera App - SEARS</title>
+<meta name="theme-color" content="#ef4444" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:0;background:#f8fafc;color:#111}
+  .card{max-width:820px;margin:28px auto;padding:18px;background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,.08)}
+  video, canvas, img{max-width:100%;border-radius:10px;border:1px solid #e6e7eb}
+  .hidden{display:none!important}
+  .small{font-size:13px;color:#6b7280}
+  .btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#ef4444;color:#fff;font-weight:600;border:none}
+  .btn-ghost{background:#f3f4f6;color:#111}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
 </head>
-<body class="bg-red-600 text-gray-800 p-3 min-h-screen flex flex-col items-center justify-center">
+<body>
+<div class="card">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="background:#ef4444;color:#fff;font-weight:700;padding:10px 14px;border-radius:8px">SEARS</div>
+    <h1 style="margin:0;font-size:20px">ID Camera App</h1>
+  </div>
 
-    <div class="relative container-mobile w-full bg-white rounded-xl shadow-2xl p-4 space-y-4 flex flex-col items-center">
-        <!-- Logo en la esquina superior izquierda -->
-        <div class="absolute top-3 left-3 w-12 h-12 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-            SEARS
-        </div>
+  <p class="small" style="margin-top:8px">Usa la cámara trasera. Funciona en HTTPS o localhost. No se adjuntan imágenes automáticamente al correo; debes adjuntarlas manualmente.</p>
 
-        <!-- Título de la aplicación -->
-        <h1 class="text-2xl font-bold text-center text-gray-900 mt-6">ID Camera App</h1>
-        <!-- Logo de Crédito Sears -->
-        <div class="font-bold text-xl text-center text-indigo-600 tracking-wider">
-            CRÉDITO SEARS
-        </div>
-        <p class="text-xs text-center text-gray-500">Toma una foto, recorta y genera documento para impresión</p>
+  <div id="live-area" style="margin-top:12px">
+    <video id="video" autoplay playsinline muted class="" style="background:#000;display:none"></video>
+    <div id="video-placeholder" style="width:100%;height:240px;background:#111;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff">Live view aparecerá aquí</div>
+    <div id="live-instructions" class="small" style="margin-top:6px">Pulsa "Abrir cámara" y espera a que aparezca el video.</div>
+  </div>
 
-        <!-- Contenedor principal de la aplicación -->
-        <div id="app-container" class="w-full flex flex-col items-center space-y-3">
-
-            <!-- Mensajes de estado -->
-            <div id="status-message" class="text-sm font-medium text-gray-600 text-center min-h-20px">
-                Pulsa "Abrir cámara" para empezar.
-            </div>
-            
-            <!-- Contenedor para instrucciones de permiso -->
-            <div id="permission-instructions" class="w-full bg-red-100 p-3 rounded-lg text-red-700 hidden">
-                <h3 class="font-bold text-base mb-2">Permiso de cámara denegado</h3>
-                <p class="mb-2 text-sm">Para usar esta aplicación, necesitas permitir el acceso a la cámara:</p>
-                <ul class="list-disc list-inside space-y-1 text-xs">
-                    <li><strong>Chrome/Edge:</strong> Haz clic en el icono de cámara bloqueada</li>
-                    <li><strong>Safari:</strong> Ajustes > Safari > Cámara</li>
-                </ul>
-            </div>
-
-            <!-- Guía de tamaño para identificación -->
-            <div id="size-guide" class="w-full text-center hidden">
-                <p class="text-sm text-gray-600 mb-2">🔴 Encuadra la identificación dentro del marco rojo</p>
-                <div class="id-size-guide"></div>
-            </div>
-
-            <!-- Contenedor de cámara con overlay -->
-            <div id="camera-container" class="w-full flex justify-center">
-                <video id="camera-feed" class="rounded-lg shadow-md" autoplay playsinline></video>
-                <div id="camera-overlay">
-                    <div id="live-crop-box"></div>
-                </div>
-            </div>
-
-            <!-- Vista previa de la foto tomada -->
-            <img id="preview-image" class="rounded-lg shadow-md" alt="Vista previa">
-
-            <!-- Canvas para la foto capturada -->
-            <canvas id="photo-canvas" class="hidden"></canvas>
-
-            <!-- Contenedor para el recorte -->
-            <div id="crop-container" class="w-full flex justify-center mt-2 relative">
-                <canvas id="cropped-canvas" class="rounded-lg shadow-md"></canvas>
-                <div id="crop-box"></div>
-            </div>
-
-            <!-- Botones de acción -->
-            <div id="button-container" class="w-full flex flex-col space-y-2 mt-3">
-                <button id="start-camera" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
-                    📷 Abrir cámara
-                </button>
-                <button id="take-photo" class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
-                    📸 Tomar foto <span id="side-indicator" class="side-indicator side-front">FRONTAL</span>
-                </button>
-                <button id="crop-photo" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile hidden">
-                    ✂️ Recortar identificación
-                </button>
-            </div>
-
-            <!-- Área de resultados -->
-            <div id="result-area" class="w-full flex flex-col items-center space-y-3 mt-3 hidden">
-                <p class="text-center text-gray-600 font-medium">Identificación recortada:</p>
-                <canvas id="result-canvas" class="rounded-lg shadow-md"></canvas>
-                
-                <div class="w-full flex flex-col space-y-2">
-                    <button id="generate-doc-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
-                    📄 Generar Documento
-                    </button>
-                    <button id="download-btn" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
-                        💾 Descargar imagen
-                    </button>
-                    <button id="rotate-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
-                        🔄 Rotar 90°
-                    </button>
-                    <button id="send-email-btn" class="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-full transition-all duration-200 transform hover:scale-105 shadow-md btn-mobile">
-                        📧 Enviar por correo
-                    </button>
-                </div>
-                <button id="restart-btn" class="text-sm text-gray-500 hover:text-gray-700 mt-2 font-medium">
-                    🔁 Tomar otra foto
-                </button>
-            </div>
-            
-            <!-- Contenedor para envío por correo -->
-            <div id="email-container">
-                <h3 class="font-bold text-lg mb-3 text-center">Enviar por correo</h3>
-                <div class="space-y-3">
-                    <input type="email" id="email-to" placeholder="Correo destinatario" class="w-full p-3 border border-gray-300 rounded-lg">
-                    <input type="text" id="email-subject" placeholder="Asunto" class="w-full p-3 border border-gray-300 rounded-lg" value="Identificación SEARS">
-                    <textarea id="email-body" placeholder="Mensaje" class="w-full p-3 border border-gray-300 rounded-lg h-24">Adjunto las imágenes de identificación capturadas con la aplicación SEARS.</textarea>
-                    <div class="flex space-x-2">
-                        <button id="send-email" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200">
-                            Enviar
-                        </button>
-                        <button id="cancel-email" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200">
-                            Cancelar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <div style="margin-top:12px" class="grid2">
+    <div>
+      <button id="startBtn" class="btn" type="button">📷 Abrir cámara</button>
     </div>
-
-    <!-- Documento final para impresión -->
-    <div id="final-document" class="hidden">
-        <div class="text-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-800">SEARS MÉXICO</h1>
-            <h2 class="text-xl text-gray-600">CRÉDITO SEARS</h2>
-            <p class="text-gray-500">Documento de identificación del cliente</p>
-            <hr class="my-4 border-gray-300">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-8 mb-8">
-            <div>
-                <h3 class="font-bold text-lg mb-4 text-gray-700">Identificación Frontal</h3>
-                <img id="doc-front-image" src="" alt="Identificación Frontal" class="w-full max-w-xs mx-auto border border-gray-300 rounded shadow-sm">
-            </div>
-            <div>
-                <h3 class="font-bold text-lg mb-4 text-gray-700">Identificación Reverso</h3>
-                <img id="doc-back-image" src="" alt="Identificación Reverso" class="w-full max-w-xs mx-auto border border-gray-300 rounded shadow-sm">
-            </div>
-        </div>
-
-        <div class="mt-12 pt-8 border-t border-gray-300">
-            <div class="grid grid-cols-2 gap-8 text-sm text-gray-600">
-                <div>
-                    <p><strong>Fecha de captura:</strong> <span id="capture-date"></span></p>
-                    <p><strong>Hora:</strong> <span id="capture-time"></span></p>
-                </div>
-                <div>
-                    <p><strong>Procesado por:</strong> ID Camera App SEARS</p>
-                    <p><strong>Documento generado:</strong> <span id="generation-time"></span></p>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-8 text-center text-xs text-gray-500">
-            <p>Este documento ha sido generado automáticamente para fines de verificación de identidad</p>
-            <p>SEARS México - Todos los derechos reservados</p>
-        </div>
+    <div>
+      <button id="takeBtn" class="btn btn-ghost" type="button" disabled>📸 Tomar foto</button>
     </div>
+  </div>
 
-    <script>
-        // Declaración de variables globales
-        const cameraFeed = document.getElementById('camera-feed');
-        const photoCanvas = document.getElementById('photo-canvas');
-        const croppedCanvas = document.getElementById('cropped-canvas');
-        const resultCanvas = document.getElementById('result-canvas');
-        const startCameraBtn = document.getElementById('start-camera');
-        const takePhotoBtn = document.getElementById('take-photo');
-        const cropPhotoBtn = document.getElementById('crop-photo');
-        const downloadBtn = document.getElementById('download-btn');
-        const rotateBtn = document.getElementById('rotate-btn');
-        const generateDocBtn = document.getElementById('generate-doc-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const statusMessage = document.getElementById('status-message');
-        const cropBox = document.getElementById('crop-box');
-        const resultArea = document.getElementById('result-area');
-        const cropContainer = document.getElementById('crop-container');
-        const permissionInstructions = document.getElementById('permission-instructions');
-        const sizeGuide = document.getElementById('size-guide');
-        const finalDocument = document.getElementById('final-document');
-        const docFrontImage = document.getElementById('doc-front-image');
-        const docBackImage = document.getElementById('doc-back-image');
-        const captureDate = document.getElementById('capture-date');
-        const captureTime = document.getElementById('capture-time');
-        const generationTime = document.getElementById('generation-time');
-        const cameraContainer = document.getElementById('camera-container');
-        const liveCropBox = document.getElementById('live-crop-box');
-        const sideIndicator = document.getElementById('side-indicator');
-        const previewImage = document.getElementById('preview-image');
-        const sendEmailBtn = document.getElementById('send-email-btn');
-        const emailContainer = document.getElementById('email-container');
-        const emailTo = document.getElementById('email-to');
-        const emailSubject = document.getElementById('email-subject');
-        const emailBody = document.getElementById('email-body');
-        const sendEmail = document.getElementById('send-email');
-        const cancelEmail = document.getElementById('cancel-email');
+  <div style="margin-top:12px" class="grid2">
+    <div>
+      <div class="small">Lado actual: <strong id="sideLabel">FRONTAL</strong></div>
+      <img id="previewFront" class="hidden" alt="Frontal preview">
+      <div id="front-actions" class="small hidden" style="margin-top:6px">
+        <button id="downloadFront" class="btn-ghost" type="button">Descargar frontal (JPG)</button>
+      </div>
+    </div>
+    <div>
+      <div class="small">Reverso: <strong id="sideLabel2">PENDIENTE</strong></div>
+      <img id="previewBack" class="hidden" alt="Reverso preview">
+      <div id="back-actions" class="small hidden" style="margin-top:6px">
+        <button id="downloadBack" class="btn-ghost" type="button">Descargar reverso (JPG)</button>
+      </div>
+    </div>
+  </div>
 
-        let stream = null;
-        let originalImage = null;
-        let isCropping = false;
-        let startX, startY;
-        let rotation = 0;
-        let cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
-        let capturedImages = {
-            front: null,
-            back: null
-        };
-        let currentSide = 'front';
+  <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+    <button id="restartBtn" class="btn-ghost" type="button">🔁 Reiniciar</button>
+    <button id="openMailBtn" class="btn" type="button">✉️ Abrir correo (preparado)</button>
+    <button id="showDocBtn" class="btn-ghost" type="button">📄 Generar vista impresión</button>
+  </div>
 
-        // Función para mostrar mensajes de estado
-        function showStatus(message) {
-            statusMessage.textContent = message;
-        }
+  <p id="status" class="small" style="margin-top:10px"></p>
 
-        // Función para cambiar la visibilidad de los elementos
-        function showElement(el) { 
-            el.classList.remove('hidden'); 
-        }
-        function hideElement(el) { 
-            el.classList.add('hidden'); 
-        }
+  <!-- hidden canvases -->
+  <canvas id="captureCanvas" class="hidden"></canvas>
 
-        // Actualizar indicador de lado
-        function updateSideIndicator() {
-            if (currentSide === 'front') {
-                sideIndicator.textContent = 'FRONTAL';
-                sideIndicator.className = 'side-indicator side-front';
-            } else {
-                sideIndicator.textContent = 'REVERSO';
-                sideIndicator.className = 'side-indicator side-back';
-            }
-        }
+  <!-- Documento simple para imprimir -->
+  <div id="printDoc" class="hidden" style="margin-top:18px;padding:16px;border:1px dashed #e5e7eb;border-radius:8px;background:#fff">
+    <h3 style="margin:0 0 8px 0">Documento generado</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1 1 240px"><img id="docFront" alt="Frontal doc" style="border:1px solid #e6e7eb"></div>
+      <div style="flex:1 1 240px"><img id="docBack" alt="Reverso doc" style="border:1px solid #e6e7eb"></div>
+    </div>
+    <p class="small" style="margin-top:8px">Imprime con Ctrl+P o usa la función de impresión del móvil.</p>
+  </div>
+</div>
 
-        // Configurar cuadro de recorte en vivo
-        function setupLiveCropBox() {
-            const videoWidth = cameraFeed.videoWidth;
-            const videoHeight = cameraFeed.videoHeight;
-            const rect = cameraFeed.getBoundingClientRect();
-            
-            // Tamaño más pequeño para identificación (proporción 2:3)
-            const boxHeight = Math.min(videoHeight * 0.5, 300);
-            const boxWidth = boxHeight * 0.66; // Proporción 2:3 para IDs
-            
-            // Calcular escala para posicionamiento correcto
-            const scaleX = videoWidth / rect.width;
-            const scaleY = videoHeight / rect.height;
-            
-            // Posicionar el cuadro en el centro
-            const boxX = (videoWidth - boxWidth) / 2;
-            const boxY = (videoHeight - boxHeight) / 2;
-            
-            // Configurar el cuadro de recorte en vivo
-            liveCropBox.style.position = 'absolute';
-            liveCropBox.style.border = '3px dashed #00ff00';
-            liveCropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
-            liveCropBox.style.left = (boxX / scaleX) + 'px';
-            liveCropBox.style.top = (boxY / scaleY) + 'px';
-            liveCropBox.style.width = (boxWidth / scaleX) + 'px';
-            liveCropBox.style.height = (boxHeight / scaleY) + 'px';
-            
-            showElement(liveCropBox);
-            
-            // Guardar coordenadas para usar después
-            cropCoordinates = {
-                x: boxX,
-                y: boxY,
-                width: boxWidth,
-                height: boxHeight
-            };
-        }
+<script>
+/*
+  Flujo:
+  - start camera (try facingMode:environment, fallback video:true)
+  - show live view
+  - take photo: capture currentSide (front then back)
+  - for back: restart camera then take photo
+  - save JPG dataURLs and provide download links
+  - open mailto: with subject/body (images cannot be auto-attached)
+*/
 
-        // Evento: Iniciar la cámara
-        startCameraBtn.addEventListener('click', async () => {
-            showStatus('🔄 Accediendo a la cámara...');
-            hideElement(permissionInstructions);
-            
-            try {
-                // Forzar orientación vertical
-                const constraints = {
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 720 },
-                        height: { ideal: 1280 },
-                        aspectRatio: { ideal: 9/16 }
-                    }
-                };
-                
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                
-                cameraFeed.srcObject = stream;
-                showElement(cameraContainer);
-                showElement(cameraFeed);
-                showElement(sizeGuide);
-                hideElement(startCameraBtn);
-                showElement(takePhotoBtn);
-                
-                // Esperar a que el video esté listo para configurar el cuadro
-                cameraFeed.onloadedmetadata = () => {
-                    setupLiveCropBox();
-                    showStatus('✅ Cámara lista. Enfoca la identificación dentro del marco verde');
-                };
-                
-            } catch (error) {
-                console.error('Error al acceder a la cámara:', error);
-                
-                if (error.name === 'NotAllowedError') {
-                    showStatus('❌ Permiso de cámara denegado');
-                    showElement(permissionInstructions);
-                } else {
-                    showStatus('❌ Error al acceder a la cámara');
-                    showElement(permissionInstructions);
-                }
-                showElement(startCameraBtn);
-            }
-        });
+const startBtn = document.getElementById('startBtn');
+const takeBtn = document.getElementById('takeBtn');
+const restartBtn = document.getElementById('restartBtn');
+const openMailBtn = document.getElementById('openMailBtn');
+const video = document.getElementById('video');
+const placeholder = document.getElementById('video-placeholder');
+const status = document.getElementById('status');
+const captureCanvas = document.getElementById('captureCanvas');
+const previewFront = document.getElementById('previewFront');
+const previewBack = document.getElementById('previewBack');
+const downloadFront = document.getElementById('downloadFront');
+const downloadBack = document.getElementById('downloadBack');
+const sideLabel = document.getElementById('sideLabel');
+const sideLabel2 = document.getElementById('sideLabel2');
+const showDocBtn = document.getElementById('showDocBtn');
+const printDoc = document.getElementById('printDoc');
+const docFront = document.getElementById('docFront');
+const docBack = document.getElementById('docBack');
 
-        // Evento: Tomar la foto
-        takePhotoBtn.addEventListener('click', () => {
-            if (!stream) {
-                showStatus('❌ Error: No hay transmisión de cámara');
-                return;
-            }
+let stream = null;
+let currentSide = 'front'; // front -> then back
+let images = { front: null, back: null };
 
-            showStatus('📸 Procesando foto...');
-            
-            // Configurar el canvas con las dimensiones del video
-            const videoWidth = cameraFeed.videoWidth;
-            const videoHeight = cameraFeed.videoHeight;
-            
-            photoCanvas.width = videoWidth;
-            photoCanvas.height = videoHeight;
-            croppedCanvas.width = videoWidth;
-            croppedCanvas.height = videoHeight;
-            
-            // Dibujar el frame actual del video en el canvas
-            const context = photoCanvas.getContext('2d');
-            context.drawImage(cameraFeed, 0, 0, videoWidth, videoHeight);
-            
-            // Crear vista previa de la imagen tomada
-            const dataURL = photoCanvas.toDataURL('image/jpeg', 0.9);
-            previewImage.src = dataURL;
-            showElement(previewImage);
-            
-            // Detener la cámara
-            stream.getTracks().forEach(track => track.stop());
-            stream = null;
-            
-            // Ocultar elementos de cámara y mostrar área de recorte
-            hideElement(cameraContainer);
-            hideElement(sizeGuide);
-            hideElement(takePhotoBtn);
-            showElement(cropContainer);
-            showElement(croppedCanvas);
-            
-            // Dibujar la imagen en el canvas de recorte
-            const cropContext = croppedCanvas.getContext('2d');
-            cropContext.drawImage(photoCanvas, 0, 0);
-            
-            // Inicializar el cuadro de recorte usando las coordenadas del cuadro en vivo
-            initializeCropBox();
-            
-            showStatus('⬅️➡️ Ajusta el cuadro verde sobre la identificación si es necesario');
-            showElement(cropPhotoBtn);
-        });
+// Helpers
+function setStatus(txt) { status.textContent = txt; }
+function showVideo() { video.style.display='block'; placeholder.style.display='none'; }
+function hideVideo() { video.style.display='none'; placeholder.style.display='flex'; }
 
-        // Inicializar el cuadro de recorte usando las coordenadas del cuadro en vivo
-        function initializeCropBox() {
-            const canvas = croppedCanvas;
-            const rect = canvas.getBoundingClientRect();
-            
-            // Usar las coordenadas ya calculadas del cuadro en vivo
-            const boxWidth = cropCoordinates.width;
-            const boxHeight = cropCoordinates.height;
-            const boxX = cropCoordinates.x;
-            const boxY = cropCoordinates.y;
-            
-            // Configurar el cuadro de recorte
-            cropBox.style.position = 'absolute';
-            cropBox.style.border = '3px dashed #00ff00';
-            cropBox.style.backgroundColor = 'rgba(0, 255, 0, 0.15)';
-            cropBox.style.boxShadow = '0 0 0 9999px rgba(0, 0, 0, 0.7)';
-            cropBox.style.cursor = 'move';
-            
-            // Posicionar el cuadro relativo al canvas
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            
-            cropBox.style.left = (boxX / scaleX) + 'px';
-            cropBox.style.top = (boxY / scaleY) + 'px';
-            cropBox.style.width = (boxWidth / scaleX) + 'px';
-            cropBox.style.height = (boxHeight / scaleY) + 'px';
-            
-            showElement(cropBox);
-            
-            // Mantener las coordenadas ya establecidas
-        }
+// Start camera: prefer rear camera, fallback to default
+async function startCamera() {
+  setStatus('Solicitando cámara...');
+  takeBtn.disabled = true;
+  try {
+    // First try forcing environment (rear). Some browsers reject exact constraint, so try loose then exact fallback.
+    const constraintsList = [
+      { video: { facingMode: { ideal: 'environment' }, width:{ideal:1280}, height:{ideal:720} } },
+      { video: { facingMode: 'environment' } },
+      { video: true }
+    ];
+    let got = false;
+    for (const c of constraintsList) {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia(c);
+        stream = s;
+        got = true;
+        break;
+      } catch (err) {
+        // continue to next fallback
+      }
+    }
+    if (!got) throw new Error('No se pudo acceder a la cámara');
+    video.srcObject = stream;
+    showVideo();
+    setStatus('Cámara activa. Pulsa "Tomar foto".');
+    takeBtn.disabled = false;
+  } catch (e) {
+    console.error(e);
+    setStatus('Error al acceder a la cámara. Revisa permisos y que la página esté en HTTPS o localhost.');
+    takeBtn.disabled = true;
+  }
+}
 
-        // Eventos para arrastrar el cuadro de recorte
-        cropBox.addEventListener('mousedown', startDragging);
-        cropBox.addEventListener('touchstart', startDragging, { passive: false });
+// Stop camera
+function stopCamera() {
+  if (!stream) return;
+  stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  hideVideo();
+  setStatus('Cámara detenida.');
+}
 
-        function startDragging(e) {
-            e.preventDefault();
-            isCropping = true;
-            
-            const rect = croppedCanvas.getBoundingClientRect();
-            if (e.type === 'mousedown') {
-                startX = e.clientX;
-                startY = e.clientY;
-            } else {
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-            }
-            
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag, { passive: false });
-            document.addEventListener('mouseup', stopDragging);
-            document.addEventListener('touchend', stopDragging);
-        }
+// Capture current frame to JPG dataURL
+function captureJPG(quality = 0.92) {
+  if (!video || video.videoWidth === 0) {
+    // fallback draw placeholder if video not available (shouldn't happen)
+    setStatus('Error: video no disponible para capturar.');
+    return null;
+  }
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  captureCanvas.width = w;
+  captureCanvas.height = h;
+  const ctx = captureCanvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, w, h);
+  return captureCanvas.toDataURL('image/jpeg', quality);
+}
 
-        function drag(e) {
-            if (!isCropping) return;
-            e.preventDefault();
-            
-            let currentX, currentY;
-            
-            if (e.type === 'mousemove') {
-                currentX = e.clientX;
-                currentY = e.clientY;
-            } else {
-                currentX = e.touches[0].clientX;
-                currentY = e.touches[0].clientY;
-            }
-            
-            const deltaX = currentX - startX;
-            const deltaY = currentY - startY;
-            
-            const rect = croppedCanvas.getBoundingClientRect();
-            const scaleX = croppedCanvas.width / rect.width;
-            const scaleY = croppedCanvas.height / rect.height;
-            
-            // Calcular nueva posición manteniendo el cuadro dentro del canvas
-            const newX = Math.max(0, Math.min(
-                croppedCanvas.width - cropCoordinates.width, 
-                cropCoordinates.x + (deltaX * scaleX)
-            ));
-            const newY = Math.max(0, Math.min(
-                croppedCanvas.height - cropCoordinates.height, 
-                cropCoordinates.y + (deltaY * scaleY)
-            ));
-            
-            // Actualizar posición visual
-            cropBox.style.left = (newX / scaleX) + 'px';
-            cropBox.style.top = (newY / scaleY) + 'px';
-            
-            // Actualizar coordenadas
-            cropCoordinates.x = newX;
-            cropCoordinates.y = newY;
-            
-            startX = currentX;
-            startY = currentY;
-        }
+// Download helper
+function downloadDataURL(dataURL, filename) {
+  const a = document.createElement('a');
+  a.href = dataURL;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
-        function stopDragging() {
-            isCropping = false;
-            document.removeEventListener('mousemove', drag);
-            document.removeEventListener('touchmove', drag);
-            document.removeEventListener('mouseup', stopDragging);
-            document.removeEventListener('touchend', stopDragging);
-        }
+// UI Flow handlers
+startBtn.addEventListener('click', async () => {
+  await startCamera();
+});
 
-        // Evento: Recortar la imagen
-        cropPhotoBtn.addEventListener('click', () => {
-            if (!cropCoordinates.width || !cropCoordinates.height) {
-                showStatus('❌ Primero selecciona un área para recortar');
-                return;
-            }
+takeBtn.addEventListener('click', async () => {
+  if (!stream) { setStatus('Cámara no activa. Pulsa "Abrir cámara".'); return; }
+  setStatus('Capturando ' + currentSide + '...');
+  const data = captureJPG(0.92);
+  if (!data) { setStatus('Error al capturar.'); return; }
 
-            showStatus('✂️ Recortando imagen...');
-            
-            // Configurar el canvas de resultado
-            resultCanvas.width = cropCoordinates.width;
-            resultCanvas.height = cropCoordinates.height;
-            
-            const resultContext = resultCanvas.getContext('2d');
-            
-            // Dibujar solo el área recortada
-            resultContext.drawImage(
-                photoCanvas,
-                cropCoordinates.x, cropCoordinates.y, cropCoordinates.width, cropCoordinates.height,
-                0, 0, cropCoordinates.width, cropCoordinates.height
-            );
-            
-            // Guardar la imagen según el lado actual
-            capturedImages[currentSide] = resultCanvas.toDataURL('image/jpeg', 0.9);
-            
-            // Ocultar elementos de recorte y mostrar resultados
-            hideElement(cropContainer);
-            hideElement(cropPhotoBtn);
-            hideElement(previewImage);
-            showElement(resultArea);
-            
-            if (currentSide === 'front') {
-                showStatus('✅ ¡Frontal capturado! ¿Quieres capturar el REVERSO?');
-                currentSide = 'back';
-                updateSideIndicator();
-                takePhotoBtn.textContent = '📸 Capturar Reverso';
-                takePhotoBtn.classList.remove('hidden');
-                showElement(startCameraBtn);
-                hideElement(resultArea);
-            } else {
-                showStatus('✅ ¡Ambas caras capturadas! Genera el documento o envíalo por correo');
-            }
-        });
+  const ts = new Date().toISOString().slice(0,19).replace(/[:.]/g,'-');
+  if (currentSide === 'front') {
+    images.front = data;
+    previewFront.src = data;
+    previewFront.classList.remove('hidden');
+    downloadFront.parentElement.classList.remove('hidden');
+    downloadFront.onclick = () => downloadDataURL(images.front, `identificacion-frontal-${ts}.jpg`);
+    sideLabel2.textContent = 'PENDIENTE';
+    setStatus('Frontal guardado. Ahora capture el reverso.');
+    // prepare for back: stop and allow user to restart camera
+    stopCamera();
+    currentSide = 'back';
+    sideLabel.textContent = 'REVERSO (preparar)';
+    // auto-restart camera after short delay to simplify flow
+    setTimeout(async () => {
+      sideLabel.textContent = 'REVERSO';
+      await startCamera();
+    }, 600);
+  } else {
+    images.back = data;
+    previewBack.src = data;
+    previewBack.classList.remove('hidden');
+    downloadBack.parentElement.classList.remove('hidden');
+    downloadBack.onclick = () => downloadDataURL(images.back, `identificacion-reverso-${ts}.jpg`);
+    setStatus('Reverso guardado. Listo para descargar o enviar.');
+    stopCamera();
+    currentSide = 'done';
+    sideLabel.textContent = 'COMPLETADO';
+    sideLabel2.textContent = 'LISTO';
+    // set doc images
+    docFront.src = images.front || '';
+    docBack.src = images.back || '';
+  }
+});
 
-        // Evento: Generar documento
-        generateDocBtn.addEventListener('click', () => {
-            if (!capturedImages.front || !capturedImages.back) {
-                showStatus('❌ Necesitas capturar ambas caras de la identificación');
-                return;
-            }
+// restart button clears and reloads state
+restartBtn.addEventListener('click', () => {
+  stopCamera();
+  images = { front: null, back: null };
+  previewFront.src = ''; previewBack.src = '';
+  previewFront.classList.add('hidden'); previewBack.classList.add('hidden');
+  downloadFront.parentElement.classList.add('hidden'); downloadBack.parentElement.classList.add('hidden');
+  sideLabel.textContent = 'FRONTAL';
+  sideLabel2.textContent = 'PENDIENTE';
+  currentSide = 'front';
+  setStatus('Reiniciado. Pulsa "Abrir cámara" para comenzar.');
+  printDoc.classList.add('hidden');
+});
 
-            showStatus('📄 Generando documento...');
-            
-            // Actualizar imágenes en el documento
-            docFrontImage.src = capturedImages.front;
-            docBackImage.src = capturedImages.back;
-            
-            // Actualizar fechas y horas
-            const now = new Date();
-            captureDate.textContent = now.toLocaleDateString('es-MX');
-            captureTime.textContent = now.toLocaleTimeString('es-MX');
-            generationTime.textContent = now.toLocaleString('es-MX');
-            
-            // Mostrar documento
-            showElement(finalDocument);
-            
-            // Scroll al documento
-            finalDocument.scrollIntoView({ behavior: 'smooth' });
-            
-            showStatus('✅ Documento generado. Puedes imprimirlo con Ctrl+P');
-        });
+// open mail client (mailto) - cannot attach files; instruction included
+openMailBtn.addEventListener('click', () => {
+  const subject = encodeURIComponent('Identificaciones SEARS - [Nombre cliente]');
+  let body = 'Adjunto frontal y reverso de identificación.\n\nInstrucciones:\n- Adjunta los archivos JPG descargados desde la aplicación.\n- Nombre sugerido: identificacion-frontal-YYYY-MM-DDThh-mm-ss.jpg\n\nAtentamente,\n';
+  body = encodeURIComponent(body);
+  // mailto
+  const mailto = `mailto:?subject=${subject}&body=${body}`;
+  window.location.href = mailto;
+  setStatus('Se abrió el cliente de correo. Adjunta manualmente las imágenes descargadas.');
+});
 
-        // Evento: Descargar imagen actual
-        downloadBtn.addEventListener('click', () => {
-            const dataURL = resultCanvas.toDataURL('image/jpeg', 0.9);
-            const link = document.createElement('a');
-            const timestamp = new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-');
-            link.download = `identificacion-sears-${currentSide}-${timestamp}.jpg`;
-            link.href = dataURL;
-            link.click();
-            showStatus('💾 Imagen descargada correctamente');
-        });
+// show printable doc
+showDocBtn.addEventListener('click', () => {
+  if (!images.front || !images.back) {
+    setStatus('Necesitas ambas imágenes para generar vista de impresión.');
+    return;
+  }
+  docFront.src = images.front;
+  docBack.src = images.back;
+  printDoc.classList.remove('hidden');
+  printDoc.scrollIntoView({behavior:'smooth'});
+  setStatus('Vista de documento lista. Usa imprimir del navegador si deseas una copia física.');
+});
 
-        // Evento: Rotar imagen
-        rotateBtn.addEventListener('click', () => {
-            rotation = (rotation + 90) % 360;
-            
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            if (rotation === 90 || rotation === 270) {
-                tempCanvas.width = resultCanvas.height;
-                tempCanvas.height = resultCanvas.width;
-            } else {
-                tempCanvas.width = resultCanvas.width;
-                tempCanvas.height = resultCanvas.height;
-            }
-            
-            tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-            tempCtx.translate(tempCanvas.width / 2, tempCanvas.height / 2);
-            tempCtx.rotate(rotation * Math.PI / 180);
-            tempCtx.drawImage(resultCanvas, -resultCanvas.width / 2, -resultCanvas.height / 2);
-            
-            resultCanvas.width = tempCanvas.width;
-            resultCanvas.height = tempCanvas.height;
-            resultCanvas.getContext('2d').drawImage(tempCanvas, 0, 0);
-            
-            showStatus(`🔄 Imagen rotada ${rotation} grados`);
-        });
+// keyboard/mobile back handling: when page unload, stop camera
+window.addEventListener('pagehide', () => stopCamera());
+window.addEventListener('unload', () => stopCamera());
 
-        // Evento: Mostrar formulario de correo
-        sendEmailBtn.addEventListener('click', () => {
-            if (!capturedImages.front || !capturedImages.back) {
-                showStatus('❌ Necesitas capturar ambas caras de la identificación');
-                return;
-            }
-            
-            showElement(emailContainer);
-            showStatus('📧 Completa los datos para enviar por correo');
-        });
-
-        // Evento: Enviar correo
-        sendEmail.addEventListener('click', () => {
-            const to = emailTo.value;
-            const subject = emailSubject.value;
-            const body = emailBody.value;
-            
-            if (!to) {
-                showStatus('❌ Ingresa un correo destinatario');
-                return;
-            }
-            
-            // Crear enlace de correo con datos URI de las imágenes
-            const frontImageData = capturedImages.front.replace(/^data:image\/jpeg;base64,/, '');
-            const backImageData = capturedImages.back.replace(/^data:image\/jpeg;base64,/, '');
-            
-            // En un entorno real, aquí enviarías las imágenes a un servidor
-            // Por ahora, simulamos el envío mostrando un mensaje
-            showStatus('📧 Preparando envío de correo...');
-            
-            // Simulación de envío (en producción esto se haría con un backend)
-            setTimeout(() => {
-                hideElement(emailContainer);
-                showStatus('✅ Correo preparado para envío. En producción se enviaría automáticamente.');
-                
-                // En un entorno real, aquí se enviaría el correo con las imágenes adjuntas
-                console.log('Correo preparado para:', to);
-                console.log('Asunto:', subject);
-                console.log('Cuerpo:', body);
-                console.log('Imágenes capturadas:', capturedImages);
-            }, 1500);
-        });
-
-        // Evento: Cancelar envío de correo
-        cancelEmail.addEventListener('click', () => {
-            hideElement(emailContainer);
-            showStatus('Envío de correo cancelado');
-        });
-
-        // Evento: Reiniciar la aplicación
-        restartBtn.addEventListener('click', () => {
-            // Limpiar todo
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            
-            // Ocultar todos los elementos
-            hideElement(cameraContainer);
-            hideElement(cameraFeed);
-            hideElement(takePhotoBtn);
-            hideElement(cropContainer);
-            hideElement(croppedCanvas);
-            hideElement(cropBox);
-            hideElement(cropPhotoBtn);
-            hideElement(resultArea);
-            hideElement(permissionInstructions);
-            hideElement(sizeGuide);
-            hideElement(finalDocument);
-            hideElement(previewImage);
-            hideElement(emailContainer);
-            
-            // Mostrar solo el botón de inicio
-            showElement(startCameraBtn);
-            
-            // Reiniciar variables
-            rotation = 0;
-            originalImage = null;
-            cropCoordinates = { x: 0, y: 0, width: 0, height: 0 };
-            capturedImages = { front: null, back: null };
-            currentSide = 'front';
-            updateSideIndicator();
-            takePhotoBtn.textContent = '📸 Tomar foto';
-            
-            showStatus('🔄 Pulsa "Abrir cámara" para empezar.');
-        });
-
-        // Manejo de errores globales
-        window.addEventListener('error', (e) => {
-            console.error('Error global:', e);
-            showStatus('❌ Ocurrió un error inesperado');
-        });
-    </script>
+// initial UI state
+(function init(){
+  setStatus('Listo. Pulsa "Abrir cámara". Asegúrate de que el sitio esté en HTTPS o uses localhost.');
+  previewFront.classList.add('hidden');
+  previewBack.classList.add('hidden');
+  downloadFront.parentElement.classList.add('hidden');
+  downloadBack.parentElement.classList.add('hidden');
+})();
+</script>
 </body>
 </html>
