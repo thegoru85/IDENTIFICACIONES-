@@ -100,9 +100,9 @@
         }
 
         .preview-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
             display: none;
             border-radius: 6px;
         }
@@ -736,11 +736,25 @@
             updateUI();
         }
 
-        // Actualizar imagen de vista previa
+        // Actualizar imagen de vista previa - CORREGIDO para mantener proporciones
         function updatePreviewImage(imgElement, imageData) {
-            imgElement.src = imageData;
-            imgElement.style.display = 'block';
-            imgElement.style.objectFit = 'cover';
+            const tempImg = new Image();
+            tempImg.onload = function() {
+                imgElement.src = imageData;
+                imgElement.style.display = 'block';
+                
+                // Mantener proporciones originales sin estirar
+                imgElement.style.objectFit = 'contain';
+                imgElement.style.width = 'auto';
+                imgElement.style.height = 'auto';
+                imgElement.style.maxWidth = '100%';
+                imgElement.style.maxHeight = '100%';
+                
+                // Centrar la imagen
+                imgElement.style.margin = 'auto';
+                imgElement.style.display = 'block';
+            };
+            tempImg.src = imageData;
         }
 
         // Rotar imagen
@@ -777,18 +791,18 @@
             doc.setFontSize(10);
             doc.text(`Escaneado el: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`, 105, 27, { align: 'center' });
             
-            // Frente (arriba)
-            doc.addImage(frontImageData, 'JPEG', 20, 40, 170, 110);
+            // Frente (arriba) - Mantener proporciones
+            doc.addImage(frontImageData, 'JPEG', 25, 40, 160, 100);
             doc.setFontSize(12);
-            doc.text('FRENTE', 105, 155, { align: 'center' });
+            doc.text('FRENTE', 105, 145, { align: 'center' });
             
-            // Reverso (abajo)
-            doc.addImage(backImageData, 'JPEG', 20, 165, 170, 110);
-            doc.text('REVERSO', 105, 280, { align: 'center' });
+            // Reverso (abajo) - Mantener proporciones
+            doc.addImage(backImageData, 'JPEG', 25, 155, 160, 100);
+            doc.text('REVERSO', 105, 260, { align: 'center' });
             
             // Pie de página
             doc.setFontSize(8);
-            doc.text('Documento generado por Escáner de Credenciales', 105, 290, { align: 'center' });
+            doc.text('Documento generado por Escáner de Credenciales', 105, 270, { align: 'center' });
             
             pdfFile = doc.output('blob');
             
@@ -870,3 +884,4 @@
     </script>
 </body>
 </html>
+
